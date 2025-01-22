@@ -1,0 +1,1 @@
+ /home/juan/StudioProjects/geoappbeta/.dart_tool/flutter_build/7db5b9b7f4f36cef1f0b8b5d00d7683a/native_assets.yaml: 
