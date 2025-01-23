@@ -1,3 +1,5 @@
+// ignore_for_file: file_names, use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:geoappbeta/Provider/userProvider.dart';
 import 'package:provider/provider.dart';
@@ -22,13 +24,13 @@ class Login extends StatelessWidget {
               SizedBox(
                 height: screenHeight * 0.1,
               ),
-              tituloApp(screenWidth: screenWidth, screenHeight: screenHeight),
+              TituloApp(screenWidth: screenWidth, screenHeight: screenHeight),
               SizedBox(
                 height: screenHeight * 0.30,
               ),
-              botonLoginGoogle(
+              BotonLoginGoogle(
                   screenWidth: screenWidth, screenHeight: screenHeight),
-              botonLoginAno(
+              BotonLoginAno(
                   screenWidth: screenWidth, screenHeight: screenHeight),
               SizedBox(
                 height: screenHeight * 0.3,
@@ -61,7 +63,7 @@ class TextoInferior extends StatelessWidget {
     return SizedBox(
       width: screenWidth * 0.8,
       child: Text(
-        "lorem ipsum dolor sit amet, consectetur adipiscing el super nisl tempor inv sociosqu ad minim veniam",
+        "lorem ipsum dolor sit ames, connecter advising el super nill tempore inv sociol ad minim venial",
         style: TextStyle(
             fontSize: (screenWidth + screenHeight) * 0.01,
             color: Mocha.text.color),
@@ -71,8 +73,8 @@ class TextoInferior extends StatelessWidget {
   }
 }
 
-class botonLoginAno extends StatelessWidget {
-  const botonLoginAno({
+class BotonLoginAno extends StatelessWidget {
+  const BotonLoginAno({
     super.key,
     required this.screenWidth,
     required this.screenHeight,
@@ -93,14 +95,14 @@ class botonLoginAno extends StatelessWidget {
             minimumSize: Size(screenWidth * 0.62, screenHeight * 0.045)),
         onPressed: () async {
           try {
-            await context.read<SessionProvider>().IniciarAnonimo();
+            await context.read<SessionProvider>().iniciarAnonimo();
             if (context.read<SessionProvider>().user == null) {
               throw Exception("Error al iniciar sesion anonima");
             } else {
               Navigator.pushNamed(context, "/home");
             }
           } catch (e) {
-            print("Error al iniciar sesion anonima: $e");
+            throw ("Error al iniciar sesion anonima: $e");
           }
         },
         child: Text(
@@ -112,8 +114,8 @@ class botonLoginAno extends StatelessWidget {
   }
 }
 
-class botonLoginGoogle extends StatelessWidget {
-  const botonLoginGoogle({
+class BotonLoginGoogle extends StatelessWidget {
+  const BotonLoginGoogle({
     super.key,
     required this.screenWidth,
     required this.screenHeight,
@@ -134,15 +136,14 @@ class botonLoginGoogle extends StatelessWidget {
             minimumSize: Size(screenWidth * 0.62, screenHeight * 0.045)),
         onPressed: () async {
           try {
-            await context.read<SessionProvider>().IniciarGoogle();
+            await context.read<SessionProvider>().iniciarGoogle();
             if (context.read<SessionProvider>().user == null) {
               throw Exception("Error al iniciar sesion con google");
             } else {
-              print("hola");
               Navigator.pushNamed(context, "/home");
             }
           } catch (e) {
-            print("Error al iniciar sesion con google: $e");
+            throw ("Error al iniciar sesion con google: $e");
           }
         },
         child: Text(
@@ -154,8 +155,8 @@ class botonLoginGoogle extends StatelessWidget {
   }
 }
 
-class tituloApp extends StatelessWidget {
-  const tituloApp({
+class TituloApp extends StatelessWidget {
+  const TituloApp({
     super.key,
     required this.screenWidth,
     required this.screenHeight,

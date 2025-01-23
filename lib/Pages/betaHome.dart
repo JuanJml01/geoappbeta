@@ -1,3 +1,5 @@
+// ignore_for_file: file_names
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -6,7 +8,6 @@ import 'package:flutter_map_location_marker/flutter_map_location_marker.dart';
 import 'package:geoappbeta/Provider/reporteProvider.dart';
 import 'package:geoappbeta/mocha.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:getwidget/getwidget.dart';
 import 'package:provider/provider.dart';
 import 'package:latlong2/latlong.dart';
 
@@ -48,7 +49,7 @@ class _HomeState extends State<Home> {
         });
       }
     } catch (e) {
-      print("Error obteniendo posición: $e");
+      throw ("Error obteniendo posición: $e");
     }
   }
 
@@ -95,6 +96,7 @@ class _HomeState extends State<Home> {
     double screenHeight = MediaQuery.of(context).size.height;
     return Scaffold(
       floatingActionButton: FloatingActionButton.large(
+        elevation: 20,
         backgroundColor: Mocha.base.color,
         foregroundColor: Mocha.blue.color,
         onPressed: () {
@@ -130,9 +132,7 @@ class _HomeState extends State<Home> {
                   color: Mocha.green.color,
                   alignment: Alignment.center,
                   iconSize: (screenHeight + screenWidth) * 0.05,
-                  onPressed: () {
-                    print("Toco");
-                  },
+                  onPressed: () {},
                   icon: Icon(
                     shadows: [
                       Shadow(

@@ -1,13 +1,12 @@
+// ignore_for_file: file_names, use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:geoappbeta/Model/reporteModel.dart';
 import 'package:geoappbeta/Provider/reporteProvider.dart';
 import 'package:geoappbeta/Provider/userProvider.dart';
 import 'package:geoappbeta/Service/tomarFoto.dart';
 import 'package:geoappbeta/mocha.dart';
-import 'package:getwidget/components/card/gf_card.dart';
-import 'package:getwidget/components/list_tile/gf_list_tile.dart';
 import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SubirReporte extends StatefulWidget {
   const SubirReporte({super.key});
@@ -16,11 +15,11 @@ class SubirReporte extends StatefulWidget {
   State<SubirReporte> createState() => _SubirReporteState();
 }
 
-enum tipoUser { anonimo, email }
+enum TipoUser { anonimo, email }
 
 class _SubirReporteState extends State<SubirReporte> {
   bool isInitialized = false;
-  tipoUser _tipoUser = tipoUser.email;
+  TipoUser _tipoUser = TipoUser.email;
   @override
   void initState() {
     super.initState();
@@ -29,7 +28,6 @@ class _SubirReporteState extends State<SubirReporte> {
 
   Future<void> _inicializarDato() async {
     if (!isInitialized) {
-      final provider = Provider.of<Reporteprovider>(context, listen: false);
       String email = context.read<SessionProvider>().user!.email ?? "";
       if (email != "") {
         await context
@@ -42,10 +40,10 @@ class _SubirReporteState extends State<SubirReporte> {
         setState(() {
           if (email != "") {
             isInitialized = true;
-            _tipoUser = tipoUser.email;
+            _tipoUser = TipoUser.email;
           } else {
             isInitialized = true;
-            _tipoUser = tipoUser.anonimo;
+            _tipoUser = TipoUser.anonimo;
           }
         });
       }
@@ -76,7 +74,7 @@ class _SubirReporteState extends State<SubirReporte> {
               )));
         }
 
-        if (_tipoUser == tipoUser.anonimo) {
+        if (_tipoUser == TipoUser.anonimo) {
           return DecoratedBox(
             decoration: BoxDecoration(color: Mocha.base.color),
             child: Center(
@@ -130,6 +128,8 @@ class _SubirReporteState extends State<SubirReporte> {
   }
 }
 
+enum Escaneo { cargando, completado }
+
 class BotonSubirReporte extends StatelessWidget {
   const BotonSubirReporte({
     super.key,
@@ -142,7 +142,31 @@ class BotonSubirReporte extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final snackbar = SnackBar(content: Text("Foto no aceptada"));
+    SnackBar snackbar({required String texto, required Escaneo e}) {
+      if (e == Escaneo.cargando) {
+        return SnackBar(
+            backgroundColor: Mocha.lavender.color,
+            content: Row(
+              spacing: screenWidth * 0.05,
+              children: [
+                Text(
+                  texto,
+                  style: TextStyle(color: Mocha.crust.color),
+                ),
+                CircularProgressIndicator(
+                  color: Mocha.crust.color,
+                )
+              ],
+            ));
+      } else {
+        return SnackBar(
+            backgroundColor: Mocha.red.color,
+            content: Text(
+              texto,
+              style: TextStyle(color: Mocha.crust.color),
+            ));
+      }
+    }
 
     return ElevatedButton.icon(
         style: ElevatedButton.styleFrom(
@@ -155,15 +179,13 @@ class BotonSubirReporte extends StatelessWidget {
         onPressed: () async {
           final provider = Provider.of<TomarFoto>(context, listen: false);
           await provider.camara();
-          //await provider.scanearFoto(foto: provider.foto);
-
-          /* if (provider.aceptada == FotoAceptada.no) {
-            ScaffoldMessenger.of(context).showSnackBar(snackbar);
-            print(provider.aceptada);
+          ScaffoldMessenger.of(context).showSnackBar(
+              snackbar(texto: "Escaneado Imagen", e: Escaneo.cargando));
+          await provider.scanearFoto(foto: provider.foto!);
+          if (provider.aceptada == FotoAceptada.no) {
+            ScaffoldMessenger.of(context).showSnackBar(
+                snackbar(texto: "Foto no aceptada", e: Escaneo.completado));
           } else {
-            Navigator.pushNamed(context, '/subiendo');
-          } */
-          if (provider.foto != null) {
             Navigator.pushNamed(context, '/subiendo');
           }
         },

@@ -1,5 +1,6 @@
+// ignore_for_file: file_names, use_build_context_synchronously
+
 import 'dart:async';
-import 'dart:ffi';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -7,10 +8,10 @@ import 'package:geoappbeta/Model/reporteModel.dart';
 import 'package:geoappbeta/Provider/reporteProvider.dart';
 import 'package:geoappbeta/Provider/userProvider.dart';
 import 'package:geoappbeta/Service/tomarFoto.dart';
+import 'package:geoappbeta/mocha.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:getwidget/components/progress_bar/gf_progress_bar.dart';
 import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SubiendoReporte extends StatefulWidget {
   const SubiendoReporte({super.key});
@@ -25,13 +26,13 @@ enum Estado {
 }
 
 class _SubiendoReporteState extends State<SubiendoReporte> {
-  double x = 1;
+  double x = 0;
   double carga = 0.0;
-  final double k = -9.0;
+  final double k = 0.1;
   Estado _estado = Estado.iniciado;
   //String _Tiempo = "";
 
-  Stream<String> _Timer() async* {
+  Stream<String> _timer() async* {
     int s = 0, h = 0, m = 0;
     while (_estado != Estado.completado) {
       await Future.delayed(Duration(seconds: 1));
@@ -56,45 +57,43 @@ class _SubiendoReporteState extends State<SubiendoReporte> {
   }
 
   Future<void> _subirReporte() async {
-    _Position().then((position) async {
+    _position().then((position) async {
       final providerR = context.read<Reporteprovider>();
       final providerU = context.read<SessionProvider>();
       late Reporte reporte;
       reporte = Reporte(
-        imagen: Provider.of<TomarFoto>(context, listen: false).foto.path,
+        imagen: Provider.of<TomarFoto>(context, listen: false).foto!.path,
         nombre: providerU.user!.email!,
         longitud: position.longitude,
         latitud: position.latitude,
       );
 
       //return providerR.addReporte(reporte);
-      print("lo hizo");
+
       await providerR.addReporte(reporte);
-      print("lo hizo2");
 
       if (mounted) {
         setState(() {
           _estado = Estado.completado;
-          _colorB = Colors.lightGreen;
+          _colorB = Mocha.green.color;
         });
       }
-    }); /* .then((_) {
-      _estado = Estado.completado;
-      _avanzar();
-    }); */
+    });
   }
 
   Stream<double> _carga() async* {
+    int tiempo = 100;
     while (_estado != Estado.completado) {
-      carga = 0.1 - (1 * exp(k * x));
-      x = x + 1;
-      await Future.delayed(Duration(milliseconds: 600));
+      carga = x < 20 ? exp(k * (x - 20)) : 1.0;
+      x++;
+      await Future.delayed(Duration(milliseconds: tiempo));
+      tiempo += tiempo;
       yield carga;
     }
     yield 1.0;
   }
 
-  Future<Position> _Position() async {
+  Future<Position> _position() async {
     bool serviceEnabled;
     LocationPermission permission;
 
@@ -119,7 +118,7 @@ class _SubiendoReporteState extends State<SubiendoReporte> {
     return await Geolocator.getCurrentPosition();
   }
 
-  Color _colorB = Colors.grey;
+  Color _colorB = Mocha.overlay2.color;
 
   @override
   Widget build(BuildContext context) {
@@ -127,78 +126,97 @@ class _SubiendoReporteState extends State<SubiendoReporte> {
     double screenHeight = MediaQuery.of(context).size.height;
 
     //final data = new Reporte(nombre: context.read<SessionProvider>().user?.email, imagen: imagen, longitud: longitud, latitud: latitud)
-    print(Provider.of<TomarFoto>(context).foto.toString());
-    print(Provider.of<TomarFoto>(context).aceptada.toString());
+
     return Scaffold(
       floatingActionButton: TextButton.icon(
-        style: TextButton.styleFrom(backgroundColor: _colorB),
-        onPressed: () => Navigator.pop(context),
+        style: TextButton.styleFrom(
+            elevation: 10,
+            shadowColor: Mocha.mantle.color,
+            backgroundColor: _colorB),
+        onPressed: () {
+          if (_estado == Estado.completado) {
+            Navigator.pop(context);
+          }
+        },
         label: Text(
           "Continuar",
           style: TextStyle(
               fontSize: (screenHeight + screenWidth) * 0.015,
-              color: Colors.white),
+              color: Mocha.crust.color),
         ),
         icon: Icon(
-          color: Colors.white,
+          color: Mocha.crust.color,
           Icons.arrow_forward,
           size: (screenHeight + screenWidth) * 0.026,
         ),
         iconAlignment: IconAlignment.end,
       ),
       appBar: AppBar(
+        foregroundColor: Mocha.lavender.color,
+        backgroundColor: Mocha.base.color,
         title: Text(
           "Volver y cancelar",
-          style: TextStyle(fontSize: (screenHeight + screenWidth) * 0.015),
+          style: TextStyle(
+              color: Mocha.lavender.color,
+              fontSize: (screenHeight + screenWidth) * 0.015),
         ),
       ),
-      body: Center(
-        child: Column(
-          children: [
-            Row(
-              spacing: 10,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Builder(builder: (context) {
-                  return StreamBuilder<String>(
-                      stream: _Timer(),
-                      builder: (context, snapshot) {
-                        if (snapshot.hasData) {
-                          return Text(
-                            "${snapshot.data}",
-                            style: TextStyle(
-                                fontSize: (screenHeight + screenWidth) * 0.013),
-                          );
-                        } else {
-                          return CircularProgressIndicator();
-                        }
-                      });
-                }),
-                Text(
-                  "Subiendo reporte",
-                  style:
-                      TextStyle(fontSize: (screenHeight + screenWidth) * 0.013),
-                ),
-              ],
-            ),
-            StreamBuilder<double>(
-                stream: _carga(),
-                builder: (context, snapshot) {
-                  if (snapshot.hasData) {
-                    return GFProgressBar(
-                      percentage: snapshot.data!,
-                      backgroundColor: Colors.black26,
-                      progressBarColor: Colors.lightGreen,
-                    );
-                  } else {
-                    return GFProgressBar(
-                      percentage: 0.0,
-                      backgroundColor: Colors.black26,
-                      progressBarColor: Colors.lightGreen,
-                    );
-                  }
-                })
-          ],
+      body: DecoratedBox(
+        decoration: BoxDecoration(color: Mocha.base.color),
+        child: Center(
+          child: Column(
+            children: [
+              Row(
+                spacing: 10,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Builder(builder: (context) {
+                    return StreamBuilder<String>(
+                        stream: _timer(),
+                        builder: (context, snapshot) {
+                          if (snapshot.hasData) {
+                            return Text(
+                              "${snapshot.data}",
+                              style: TextStyle(
+                                  color: Mocha.subtext1.color,
+                                  fontSize:
+                                      (screenHeight + screenWidth) * 0.013),
+                            );
+                          } else {
+                            return CircularProgressIndicator();
+                          }
+                        });
+                  }),
+                  SizedBox(
+                    height: screenHeight * 0.1,
+                  ),
+                  Text(
+                    "Subiendo reporte",
+                    style: TextStyle(
+                        color: Mocha.subtext1.color,
+                        fontSize: (screenHeight + screenWidth) * 0.013),
+                  ),
+                ],
+              ),
+              StreamBuilder<double>(
+                  stream: _carga(),
+                  builder: (context, snapshot) {
+                    if (snapshot.hasData) {
+                      return GFProgressBar(
+                        percentage: snapshot.data!,
+                        backgroundColor: Mocha.overlay1.color,
+                        progressBarColor: Mocha.green.color,
+                      );
+                    } else {
+                      return GFProgressBar(
+                        percentage: 0.0,
+                        backgroundColor: Mocha.overlay1.color,
+                        progressBarColor: Mocha.green.color,
+                      );
+                    }
+                  })
+            ],
+          ),
         ),
       ),
     );

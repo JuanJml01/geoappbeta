@@ -1,3 +1,5 @@
+// ignore_for_file: file_names
+
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -9,17 +11,17 @@ class SessionProvider with ChangeNotifier {
   User? _user;
   User? get user => _user;
 
-  Future<void> IniciarAnonimo() async {
+  Future<void> iniciarAnonimo() async {
     try {
-      final UserCredential = await _auth.client.auth.signInAnonymously();
-      _user = UserCredential.user;
+      final userCredential = await _auth.client.auth.signInAnonymously();
+      _user = userCredential.user;
       notifyListeners();
     } catch (e) {
-      print('Error al iniciar sesión anónima: $e');
+      throw ('Error al iniciar sesión anónima: $e');
     }
   }
 
-  Future<void> IniciarGoogle() async {
+  Future<void> iniciarGoogle() async {
     try {
       final googleUser =
           await GoogleSignIn(serverClientId: dotenv.env['webClientId'])
@@ -36,19 +38,19 @@ class SessionProvider with ChangeNotifier {
         throw 'No idToken';
       }
 
-      final Usercredential = await _auth.client.auth.signInWithIdToken(
+      final userCredential = await _auth.client.auth.signInWithIdToken(
           provider: OAuthProvider.google,
           idToken: idToken,
           accessToken: accesToken);
 
-      _user = Usercredential.user;
+      _user = userCredential.user;
       notifyListeners();
     } catch (e) {
-      print('Error al iniciar sesión con Google: $e');
+      throw ('Error al iniciar sesión con Google: $e');
     }
   }
 
-  Future<void> SalirSession() async {
+  Future<void> salirSession() async {
     await _auth.client.auth.signOut();
     await GoogleSignIn().signOut();
     _user = null;

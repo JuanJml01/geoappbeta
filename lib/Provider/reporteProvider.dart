@@ -1,3 +1,5 @@
+// ignore_for_file: file_names
+
 import 'dart:io';
 import 'dart:math';
 import 'package:flutter/material.dart';
@@ -22,7 +24,7 @@ class Reporteprovider with ChangeNotifier {
       }).toList());
       notifyListeners();
     } catch (e) {
-      print(e);
+      rethrow;
     }
   }
 
@@ -45,13 +47,13 @@ class Reporteprovider with ChangeNotifier {
         _reportes.clear();
       }
     } catch (e) {
-      print(e);
+      rethrow;
     }
   }
 
-  static Future<String> Storage({required File foto}) async {
+  static Future<String> storage({required File foto}) async {
     final path = "public/${Random().nextInt(1000000)}.jpeg";
-    final response = await Supabase.instance.client.storage
+    await Supabase.instance.client.storage
         .from('imagenes')
         .upload(path, foto, retryAttempts: 3);
     return path;
@@ -60,7 +62,7 @@ class Reporteprovider with ChangeNotifier {
   Future<void> addReporte(Reporte data) async {
     await Supabase.instance.client.from('Reportes').insert({
       'nombre': data.nombre != '' ? data.nombre : 'Anonimo',
-      'imagen': await Storage(foto: File(data.imagen)),
+      'imagen': await storage(foto: File(data.imagen)),
       'latitud': data.latitud,
       'longitud': data.longitud,
       'descripcion': data.descripcion
