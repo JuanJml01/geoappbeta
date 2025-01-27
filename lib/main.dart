@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:geoappbeta/Pages/betaLogin.dart';
-import 'package:geoappbeta/Pages/betaSubiendoR.dart';
+import 'package:geoappbeta/Pages/beta_login.dart';
+import 'package:geoappbeta/Pages/beta_subiendo_r.dart';
+import 'package:geoappbeta/Pages/beta_ver_reporte.dart';
 import 'package:geoappbeta/Provider/reporteProvider.dart';
 import 'package:geoappbeta/Provider/userProvider.dart';
 import 'package:geoappbeta/Service/tomarFoto.dart';
@@ -45,6 +46,7 @@ class MyApp extends StatelessWidget {
           '/': (context) => Login(),
           '/home': (context) => Skeleton(),
           '/subiendo': (context) => SubiendoReporte(),
+          '/verReporte': (context) => VerReporte()
         },
       ),
     );

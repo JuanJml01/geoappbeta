@@ -2,7 +2,7 @@
 
 class Reporte {
   final int id;
-  final String nombre;
+  final String email;
   final String descripcion;
   final String imagen;
   final double latitud;
@@ -10,7 +10,7 @@ class Reporte {
 
   Reporte(
       {this.id = 0,
-      required this.nombre,
+      required this.email,
       required this.imagen,
       required this.longitud,
       required this.latitud,
@@ -21,7 +21,7 @@ class Reporte {
         id: data['id'],
         latitud: data['latitud'],
         longitud: data['longitud'],
-        nombre: data['nombre'],
+        email: data['email'],
         imagen: data['imagen'],
         descripcion: data['descripcion']);
   }

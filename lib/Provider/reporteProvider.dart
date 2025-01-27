@@ -15,16 +15,20 @@ class Reporteprovider with ChangeNotifier {
       final querydata = await Supabase.instance.client.from('Reportes').select()
           as List<dynamic>;
       _reportes.clear();
-      _reportes.addAll(querydata.map((item) {
-        item['imagen'] =
-            Supabase.instance.client.storage.from('imagenes').getPublicUrl(
-                  item['imagen'],
-                );
-        return Reporte.fromMap(item);
-      }).toList());
-      notifyListeners();
+      if (querydata.isNotEmpty) {
+        _reportes.addAll(querydata.map((item) {
+          item['imagen'] =
+              Supabase.instance.client.storage.from('imagenes').getPublicUrl(
+                    item['imagen'],
+                  );
+          return Reporte.fromMap(item);
+        }).toList());
+        notifyListeners();
+      } else {
+        _reportes.clear();
+      }
     } catch (e) {
-      rethrow;
+      await fetchReporte();
     }
   }
 
@@ -61,7 +65,7 @@ class Reporteprovider with ChangeNotifier {
 
   Future<void> addReporte(Reporte data) async {
     await Supabase.instance.client.from('Reportes').insert({
-      'nombre': data.nombre != '' ? data.nombre : 'Anonimo',
+      'email': data.email != '' ? data.email : 'Anonimo',
       'imagen': await storage(foto: File(data.imagen)),
       'latitud': data.latitud,
       'longitud': data.longitud,
