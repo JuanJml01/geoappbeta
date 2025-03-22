@@ -24,8 +24,7 @@ class SessionProvider with ChangeNotifier {
   Future<void> iniciarGoogle() async {
     try {
       final googleUser =
-          await GoogleSignIn(serverClientId: dotenv.env['webClientId'])
-              .signIn();
+          await GoogleSignIn(serverClientId: dotenv.env['webClientId']).signIn();
       final googleAuth = await googleUser!.authentication;
 
       final accesToken = googleAuth.accessToken;

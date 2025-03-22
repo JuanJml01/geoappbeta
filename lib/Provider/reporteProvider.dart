@@ -37,7 +37,7 @@ class Reporteprovider with ChangeNotifier {
       final querydata = await Supabase.instance.client
           .from('Reportes')
           .select()
-          .eq('nombre', nombre);
+          .eq('email', nombre);
       if (querydata.isNotEmpty) {
         _reportes.clear();
         _reportes.addAll(querydata.map((item) {
