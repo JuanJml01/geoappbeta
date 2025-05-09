@@ -18,9 +18,13 @@ class _UsuarioConfigState extends State<UsuarioConfig> {
         decoration: BoxDecoration(color: Mocha.base.color),
         child: Center(
           child: TextButton(
-              onPressed: () {
-                context.read<SessionProvider>().salirSession();
-                Navigator.pop(context);
+              onPressed: () async {
+                await context.read<SessionProvider>().salirSession();
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  '/',
+                  (route) => false,
+                );
               },
               child: Text(
                 "Salir Cuenta",

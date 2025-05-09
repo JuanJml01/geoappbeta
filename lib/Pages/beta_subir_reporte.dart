@@ -56,6 +56,7 @@ class _SubirReporteState extends State<SubirReporte> {
     double screenHeight = MediaQuery.of(context).size.height;
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         foregroundColor: Mocha.text.color,
         backgroundColor: Mocha.base.color,
         title: Text(

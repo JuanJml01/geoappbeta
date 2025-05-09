@@ -36,7 +36,8 @@ class MyApp extends StatelessWidget {
         Provider(create: (context) => TomarFoto())
       ],
       child: MaterialApp(
-        title: 'Flutter Demo',
+        debugShowCheckedModeBanner: false,
+        title: 'GeopApp',
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
           useMaterial3: true,
