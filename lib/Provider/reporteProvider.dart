@@ -3,7 +3,7 @@
 import 'dart:io';
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:geoappbeta/Model/reporteModel.dart';
+import 'package:geoapptest/Model/reporteModel.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class Reporteprovider with ChangeNotifier {

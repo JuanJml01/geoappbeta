@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:geoappbeta/Provider/userProvider.dart';
-import 'package:geoappbeta/mocha.dart';
+import 'package:geoapptest/Provider/userProvider.dart';
+import 'package:geoapptest/mocha.dart';
 import 'package:provider/provider.dart';
 
 class UsuarioConfig extends StatefulWidget {

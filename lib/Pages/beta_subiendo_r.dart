@@ -4,13 +4,12 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:geoappbeta/Model/reporteModel.dart';
-import 'package:geoappbeta/Provider/reporteProvider.dart';
-import 'package:geoappbeta/Provider/userProvider.dart';
-import 'package:geoappbeta/Service/tomarFoto.dart';
-import 'package:geoappbeta/mocha.dart';
+import 'package:geoapptest/Model/reporteModel.dart';
+import 'package:geoapptest/Provider/reporteProvider.dart';
+import 'package:geoapptest/Provider/userProvider.dart';
+import 'package:geoapptest/Service/tomarFoto.dart';
+import 'package:geoapptest/mocha.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:getwidget/components/progress_bar/gf_progress_bar.dart';
 import 'package:provider/provider.dart';
 
 class SubiendoReporte extends StatefulWidget {
@@ -202,23 +201,23 @@ class _SubiendoReporteState extends State<SubiendoReporte> {
                   ),
                 ],
               ),
+              SizedBox(height: screenHeight * 0.02),
               StreamBuilder<double>(
-                  stream: _carga(),
-                  builder: (context, snapshot) {
-                    if (snapshot.hasData) {
-                      return GFProgressBar(
-                        percentage: snapshot.data!,
-                        backgroundColor: Mocha.overlay1.color,
-                        progressBarColor: Mocha.green.color,
-                      );
-                    } else {
-                      return GFProgressBar(
-                        percentage: 0.0,
-                        backgroundColor: Mocha.overlay1.color,
-                        progressBarColor: Mocha.green.color,
-                      );
-                    }
-                  })
+                stream: _carga(),
+                builder: (context, snapshot) {
+                  if (snapshot.hasData) {
+                    return Container(
+                      width: screenWidth * 0.8,
+                      child: LinearProgressIndicator(
+                        value: snapshot.data,
+                        backgroundColor: Mocha.surface0.color,
+                        valueColor: AlwaysStoppedAnimation<Color>(Mocha.lavender.color),
+                      ),
+                    );
+                  }
+                  return CircularProgressIndicator();
+                },
+              ),
             ],
           ),
         ),

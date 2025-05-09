@@ -1,11 +1,11 @@
 // ignore_for_file:  use_build_context_synchronously
 
 import 'package:flutter/material.dart';
-import 'package:geoappbeta/Model/reporteModel.dart';
-import 'package:geoappbeta/Provider/reporteProvider.dart';
-import 'package:geoappbeta/Provider/userProvider.dart';
-import 'package:geoappbeta/Service/tomarFoto.dart';
-import 'package:geoappbeta/mocha.dart';
+import 'package:geoapptest/Model/reporteModel.dart';
+import 'package:geoapptest/Provider/reporteProvider.dart';
+import 'package:geoapptest/Provider/userProvider.dart';
+import 'package:geoapptest/Service/tomarFoto.dart';
+import 'package:geoapptest/mocha.dart';
 import 'package:provider/provider.dart';
 
 class SubirReporte extends StatefulWidget {

@@ -30,8 +30,7 @@ class TomarFoto {
     final model = GenerativeModel(
         apiKey: apikeys,
         model: 'gemini-2.0-flash-exp',
-        generationConfig:
-            GenerationConfig(responseMimeType: 'application/json'));
+        generationConfig: GenerationConfig());
 
     final prompt = TextPart(
         "Si la imagen cumple algunas siguintes condiciones tienes que responder si o no:\n-En la imagen se ve lo siguiente: basura y calle\n-En la imagen se ve lo siguiente: reciclaje, calle y basura\n-En la imagen se ve lo siguiente: Desechos, calle, basura");
@@ -41,12 +40,12 @@ class TomarFoto {
     final response = await model.generateContent([
       Content.multi([prompt, imageParts])
     ]);
+    
     if (response.text != null) {
-      response.text == "si" && response.text == "Si"
-          ? _aceptada = FotoAceptada.si
-          : _aceptada = FotoAceptada.no;
+      final respuesta = response.text!.toLowerCase();
+      _aceptada = (respuesta == "si") ? FotoAceptada.si : FotoAceptada.no;
     } else {
-      throw Exception("Error en escanera la imagen");
+      throw Exception("Error en escanear la imagen");
     }
   }
 }

@@ -1,9 +1,9 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'package:flutter/material.dart';
-import 'package:geoappbeta/Provider/userProvider.dart';
+import 'package:geoapptest/Provider/userProvider.dart';
 import 'package:provider/provider.dart';
-import 'package:geoappbeta/mocha.dart';
+import 'package:geoapptest/mocha.dart';
 
 class Login extends StatelessWidget {
   const Login({super.key});

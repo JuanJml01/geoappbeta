@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:geoappbeta/Pages/beta_config.dart';
-import 'package:geoappbeta/Pages/beta_home.dart';
-import 'package:geoappbeta/Pages/beta_subir_reporte.dart';
-import 'package:geoappbeta/mocha.dart';
+import 'package:geoapptest/Pages/beta_config.dart';
+import 'package:geoapptest/Pages/beta_home.dart';
+import 'package:geoapptest/Pages/beta_subir_reporte.dart';
+import 'package:geoapptest/mocha.dart';
 
 class Skeleton extends StatefulWidget {
   const Skeleton({super.key});

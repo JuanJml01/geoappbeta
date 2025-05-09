@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:geoappbeta/Model/reporteModel.dart';
-import 'package:geoappbeta/mocha.dart';
+import 'package:geoapptest/Model/reporteModel.dart';
+import 'package:geoapptest/mocha.dart';
 
 import 'package:latlong2/latlong.dart';
 
