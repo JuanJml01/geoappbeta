@@ -8,6 +8,10 @@
 
 import 'package:app_links_web/app_links_web.dart';
 import 'package:connectivity_plus/src/connectivity_plus_web.dart';
+import 'package:device_info_plus/src/device_info_plus_web.dart';
+import 'package:firebase_app_check_web/firebase_app_check_web.dart';
+import 'package:firebase_core_web/firebase_core_web.dart';
+import 'package:firebase_storage_web/firebase_storage_web.dart';
 import 'package:flutter_secure_storage_web/flutter_secure_storage_web.dart';
 import 'package:geolocator_web/geolocator_web.dart';
 import 'package:google_maps_flutter_web/google_maps_flutter_web.dart';
@@ -23,6 +27,10 @@ void registerPlugins([final Registrar? pluginRegistrar]) {
   final Registrar registrar = pluginRegistrar ?? webPluginRegistrar;
   AppLinksPluginWeb.registerWith(registrar);
   ConnectivityPlusWebPlugin.registerWith(registrar);
+  DeviceInfoPlusWebPlugin.registerWith(registrar);
+  FirebaseAppCheckWeb.registerWith(registrar);
+  FirebaseCoreWeb.registerWith(registrar);
+  FirebaseStorageWeb.registerWith(registrar);
   FlutterSecureStorageWeb.registerWith(registrar);
   GeolocatorPlugin.registerWith(registrar);
   GoogleMapsPlugin.registerWith(registrar);

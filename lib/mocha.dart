@@ -67,4 +67,51 @@ enum Mocha {
   
   final Color color;
   const Mocha({required this.color});
+  
+  // Obtener todos los colores como un mapa
+  static Map<String, Color> get colorsMap {
+    return {
+      for (var value in Mocha.values) value.name: value.color,
+    };
+  }
+  
+  // ColorScheme para tema claro basado en Mocha
+  static ColorScheme get lightColorScheme {
+    return ColorScheme(
+      primary: Mocha.green.color,
+      onPrimary: Colors.white,
+      secondary: Mocha.teal.color,
+      onSecondary: Colors.white,
+      tertiary: Mocha.mauve.color,
+      onTertiary: Colors.white,
+      error: Mocha.red.color,
+      onError: Colors.white,
+      background: Mocha.rosewater.color.withOpacity(0.2),
+      onBackground: Mocha.base.color,
+      surface: Colors.white,
+      onSurface: Mocha.base.color,
+      surfaceTint: Mocha.green.color.withOpacity(0.1),
+      brightness: Brightness.light,
+    );
+  }
+  
+  // ColorScheme para tema oscuro basado en Mocha
+  static ColorScheme get darkColorScheme {
+    return ColorScheme(
+      primary: Mocha.green.color,
+      onPrimary: Mocha.crust.color,
+      secondary: Mocha.teal.color,
+      onSecondary: Mocha.crust.color,
+      tertiary: Mocha.mauve.color,
+      onTertiary: Mocha.crust.color,
+      error: Mocha.red.color,
+      onError: Mocha.crust.color,
+      background: Mocha.base.color,
+      onBackground: Mocha.text.color,
+      surface: Mocha.mantle.color,
+      onSurface: Mocha.text.color,
+      surfaceTint: Mocha.green.color.withOpacity(0.2),
+      brightness: Brightness.dark,
+    );
+  }
 }

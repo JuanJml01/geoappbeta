@@ -2,6 +2,7 @@
 
 import 'dart:async';
 import 'dart:math';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:geoapptest/Model/reporteModel.dart';
@@ -140,7 +141,7 @@ class _SubiendoReporteState extends State<SubiendoReporte> with SingleTickerProv
       );
 
       // Usar un timeout para la subida del reporte
-      final success = await providerR.addReporte(reporte).timeout(
+      final success = await providerR.subirReporte(reporte, File(fotoProvider.foto!.path)).timeout(
         Duration(seconds: 60),
         onTimeout: () {
           return false;

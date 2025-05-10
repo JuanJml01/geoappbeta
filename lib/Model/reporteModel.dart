@@ -43,6 +43,55 @@ class UbicacionTag {
   int get hashCode => id.hashCode;
 }
 
+// Modelo para calificaciones de reportes
+class ReporteCalificacion {
+  final int id;
+  final int reporteId;
+  final String? userId;
+  final String? email;
+  final String? deviceId;
+  final int calificacion;
+  final String? comentario;
+  final DateTime createdAt;
+  
+  ReporteCalificacion({
+    this.id = 0,
+    required this.reporteId,
+    this.userId,
+    this.email,
+    this.deviceId,
+    required this.calificacion,
+    this.comentario,
+    DateTime? createdAt,
+  }) : createdAt = createdAt ?? DateTime.now();
+  
+  factory ReporteCalificacion.fromMap(Map<String, dynamic> data) {
+    return ReporteCalificacion(
+      id: data['id'] is int ? data['id'] : int.tryParse(data['id']?.toString() ?? '0') ?? 0,
+      reporteId: data['reporte_id'] is int ? data['reporte_id'] : int.tryParse(data['reporte_id']?.toString() ?? '0') ?? 0,
+      userId: data['user_id']?.toString(),
+      email: data['email'],
+      deviceId: data['device_id'],
+      calificacion: data['calificacion'] is int ? data['calificacion'] : int.tryParse(data['calificacion']?.toString() ?? '1') ?? 1,
+      comentario: data['comentario'],
+      createdAt: data['created_at'] != null 
+          ? DateTime.parse(data['created_at']) 
+          : DateTime.now(),
+    );
+  }
+  
+  Map<String, dynamic> toMap() {
+    return {
+      'reporte_id': reporteId,
+      'user_id': userId,
+      'email': email,
+      'device_id': deviceId,
+      'calificacion': calificacion,
+      'comentario': comentario,
+    };
+  }
+}
+
 // Enums antiguos (mantenidos para compatibilidad)
 enum TipoReporte { basura, vandalismo, fauna, agua, aire, ruido, otro }
 enum EstadoReporte { pendiente, enProceso, resuelto }
@@ -169,6 +218,13 @@ class Reporte {
   final TipoReporte tipo;
   final EstadoReporte estado;
   final DateTime createdAt;
+  
+  // Nuevos campos de analítica y priorización
+  final int importancia;
+  final int vistas;
+  final bool prioridadComunidad;
+  final List<ReporteCalificacion> calificaciones;
+  final double calificacionPromedio;
 
   Reporte({
     this.id = 0,
@@ -182,6 +238,11 @@ class Reporte {
     this.tipo = TipoReporte.otro,
     this.estado = EstadoReporte.pendiente,
     this.userId,
+    this.importancia = 0,
+    this.vistas = 0,
+    this.prioridadComunidad = false,
+    this.calificaciones = const [],
+    this.calificacionPromedio = 0.0,
     DateTime? createdAt
   }) : createdAt = createdAt ?? DateTime.now();
 
@@ -191,6 +252,9 @@ class Reporte {
   
   List<UbicacionTag> get ubicacionTags => 
       ubicacionTagIds.map((id) => getUbicacionTagById(id)).toList();
+  
+  // Obtener el número total de calificaciones
+  int get totalCalificaciones => calificaciones.length;
 
   // Método de fábrica para la conversión desde mapa
   factory Reporte.fromMap(Map<String, dynamic> data) {
@@ -243,6 +307,22 @@ class Reporte {
       lng = data['longitud'] is double ? data['longitud'] : double.tryParse(data['longitud'].toString()) ?? 0.0;
     }
     
+    // Manejar los nuevos campos
+    int importancia = data['importancia'] is int ? data['importancia'] : int.tryParse(data['importancia']?.toString() ?? '0') ?? 0;
+    int vistas = data['vistas'] is int ? data['vistas'] : int.tryParse(data['vistas']?.toString() ?? '0') ?? 0;
+    bool prioridadComunidad = data['prioridad_comunidad'] is bool ? data['prioridad_comunidad'] : (data['prioridad_comunidad']?.toString() == 'true');
+    
+    // Manejar calificación promedio si viene de la vista
+    double calificacionPromedio = 0.0;
+    if (data['calificacion_promedio'] != null) {
+      calificacionPromedio = data['calificacion_promedio'] is double ? 
+          data['calificacion_promedio'] : 
+          double.tryParse(data['calificacion_promedio']?.toString() ?? '0.0') ?? 0.0;
+    }
+    
+    // Lista de calificaciones (normalmente estaría vacía al cargar de la BD, se llenaría con otra consulta)
+    List<ReporteCalificacion> calificaciones = [];
+    
     return Reporte(
       id: idValue,
       latitud: lat,
@@ -255,6 +335,11 @@ class Reporte {
       tipo: tipoReporteFromString(data['tipo']?.toString() ?? ''),
       estado: estadoReporteFromString(data['estado']?.toString() ?? ''),
       userId: data['user_id']?.toString(),
+      importancia: importancia,
+      vistas: vistas,
+      prioridadComunidad: prioridadComunidad,
+      calificaciones: calificaciones,
+      calificacionPromedio: calificacionPromedio,
       createdAt: data['created_at'] != null 
           ? DateTime.parse(data['created_at']) 
           : DateTime.now()
@@ -274,6 +359,50 @@ class Reporte {
       'tipo': tipoTagIds.isNotEmpty ? tipoTagIds.first : 'otro', // Para compatibilidad
       'estado': estadoReporteToString(estado),
       'user_id': userId,
+      'importancia': importancia,
+      'vistas': vistas,
+      'prioridad_comunidad': prioridadComunidad,
     };
+  }
+  
+  // Crear una copia del reporte con valores actualizados
+  Reporte copyWith({
+    int? id,
+    String? email,
+    String? descripcion,
+    String? imagen,
+    double? latitud,
+    double? longitud,
+    String? userId,
+    List<String>? tipoTagIds,
+    List<String>? ubicacionTagIds,
+    TipoReporte? tipo,
+    EstadoReporte? estado,
+    DateTime? createdAt,
+    int? importancia,
+    int? vistas,
+    bool? prioridadComunidad,
+    List<ReporteCalificacion>? calificaciones,
+    double? calificacionPromedio,
+  }) {
+    return Reporte(
+      id: id ?? this.id,
+      email: email ?? this.email,
+      descripcion: descripcion ?? this.descripcion,
+      imagen: imagen ?? this.imagen,
+      latitud: latitud ?? this.latitud,
+      longitud: longitud ?? this.longitud,
+      userId: userId ?? this.userId,
+      tipoTagIds: tipoTagIds ?? this.tipoTagIds,
+      ubicacionTagIds: ubicacionTagIds ?? this.ubicacionTagIds,
+      tipo: tipo ?? this.tipo,
+      estado: estado ?? this.estado,
+      createdAt: createdAt ?? this.createdAt,
+      importancia: importancia ?? this.importancia,
+      vistas: vistas ?? this.vistas,
+      prioridadComunidad: prioridadComunidad ?? this.prioridadComunidad,
+      calificaciones: calificaciones ?? this.calificaciones,
+      calificacionPromedio: calificacionPromedio ?? this.calificacionPromedio,
+    );
   }
 }
