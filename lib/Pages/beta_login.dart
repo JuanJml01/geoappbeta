@@ -57,7 +57,7 @@ class Login extends StatelessWidget {
                       ),
                       SizedBox(height: screenHeight * 0.02),
                       Text(
-                        "Bienvenido a GeopApp",
+                        "Bienvenido a GeoApp",
                         style: TextStyle(
                           fontSize: (screenWidth + screenHeight) * 0.018,
                           fontWeight: FontWeight.bold,
@@ -254,7 +254,7 @@ class TituloApp extends StatelessWidget {
     return Column(
       children: [
         Text(
-          "GeopApp",
+          "GeoApp",
           style: TextStyle(
             color: EcoPalette.white.color,
             fontSize: (screenWidth + screenHeight) * 0.035,

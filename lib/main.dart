@@ -39,7 +39,7 @@ class MyApp extends StatelessWidget {
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
-        title: 'GeopApp',
+        title: 'GeoApp',
         theme: ThemeData(
           colorScheme: ColorScheme(
             primary: EcoPalette.greenPrimary.color,
