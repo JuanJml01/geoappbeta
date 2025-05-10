@@ -82,6 +82,17 @@ class MyApp extends StatelessWidget {
             bodyLarge: TextStyle(color: EcoPalette.black.color),
             bodyMedium: TextStyle(color: EcoPalette.black.color),
           ),
+          pageTransitionsTheme: PageTransitionsTheme(
+            builders: {
+              TargetPlatform.android: ZoomPageTransitionsBuilder(),
+              TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+              TargetPlatform.windows: FadeUpwardsPageTransitionsBuilder(),
+              TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+              TargetPlatform.linux: FadeUpwardsPageTransitionsBuilder(),
+            },
+          ),
+          splashColor: EcoPalette.greenLight.color.withOpacity(0.3),
+          highlightColor: EcoPalette.greenLight.color.withOpacity(0.1),
           useMaterial3: true,
         ),
         initialRoute: '/',

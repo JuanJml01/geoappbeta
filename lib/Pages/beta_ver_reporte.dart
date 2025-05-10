@@ -5,6 +5,7 @@ import 'package:geoapptest/Service/logger_service.dart';
 import 'package:geoapptest/mocha.dart';
 import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class VerReporte extends StatefulWidget {
   const VerReporte({super.key});
@@ -77,11 +78,10 @@ class _VerReporteState extends State<VerReporte> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Imagen del reporte
+                    // Imagen del reporte con Hero animation
                     Hero(
                       tag: 'reporte-${args.id}',
                       child: Container(
-                        width: double.infinity,
                         height: screenHeight * 0.3,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(16),
@@ -92,9 +92,48 @@ class _VerReporteState extends State<VerReporte> {
                               offset: Offset(0, 5),
                             ),
                           ],
-                          image: DecorationImage(
-                            image: NetworkImage(args.imagen),
-                            fit: BoxFit.cover,
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: Semantics(
+                            label: 'Imagen del reporte ${tipoReporteToString(args.tipo)}',
+                            image: true,
+                            child: CachedNetworkImage(
+                              imageUrl: args.imagen,
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              placeholder: (context, url) => Container(
+                                color: EcoPalette.grayLight.color,
+                                child: Center(
+                                  child: CircularProgressIndicator(
+                                    color: EcoPalette.greenPrimary.color,
+                                    semanticsLabel: 'Cargando imagen',
+                                  ),
+                                ),
+                              ),
+                              errorWidget: (context, url, error) => Container(
+                                color: EcoPalette.grayLight.color,
+                                child: Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.broken_image,
+                                        color: EcoPalette.error.color,
+                                        size: 48,
+                                      ),
+                                      SizedBox(height: 8),
+                                      Text(
+                                        'Error al cargar la imagen',
+                                        style: TextStyle(
+                                          color: EcoPalette.error.color,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
                           ),
                         ),
                       ),
@@ -321,69 +360,75 @@ class _VerReporteState extends State<VerReporte> {
             ),
             
             // Pestaña del mapa
-            FlutterMap(
-              mapController: _mapcontroller,
-              options: MapOptions(
-                initialZoom: 15,
-                minZoom: 4,
-                maxZoom: 18,
-                initialCenter: LatLng(args.latitud, args.longitud),
-                onMapReady: () {
-                  LoggerService().logMapInteraction(
-                    action: 'REPORT_MAP_READY',
-                    details: {
-                      'report_position': {
-                        'lat': args.latitud,
-                        'lng': args.longitud
-                      }
-                    },
-                  );
-                }
-              ),
-              children: [
-                TileLayer(
-                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                  userAgentPackageName: 'com.geoapp.app',
+            Semantics(
+              label: 'Mapa con ubicación del reporte',
+              child: FlutterMap(
+                mapController: _mapcontroller,
+                options: MapOptions(
+                  initialZoom: 15,
+                  minZoom: 4,
+                  maxZoom: 18,
+                  initialCenter: LatLng(args.latitud, args.longitud),
+                  onMapReady: () {
+                    LoggerService().logMapInteraction(
+                      action: 'REPORT_MAP_READY',
+                      details: {
+                        'report_position': {
+                          'lat': args.latitud,
+                          'lng': args.longitud
+                        }
+                      },
+                    );
+                  }
                 ),
-                MarkerLayer(markers: [
-                  Marker(
-                    width: 80,
-                    height: 80,
-                    alignment: Alignment.center,
-                    point: LatLng(
-                      args.latitud,
-                      args.longitud,
-                    ),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: EcoPalette.greenPrimary.color.withOpacity(0.8),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: EcoPalette.black.color.withOpacity(0.3),
-                            blurRadius: 8,
-                            spreadRadius: 1,
-                            offset: Offset(0, 2),
+                children: [
+                  TileLayer(
+                    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    userAgentPackageName: 'com.geoapp.app',
+                  ),
+                  MarkerLayer(markers: [
+                    Marker(
+                      width: 80,
+                      height: 80,
+                      alignment: Alignment.center,
+                      point: LatLng(
+                        args.latitud,
+                        args.longitud,
+                      ),
+                      child: Semantics(
+                        label: 'Ubicación del reporte en el mapa',
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: EcoPalette.greenPrimary.color.withOpacity(0.8),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: EcoPalette.black.color.withOpacity(0.3),
+                                blurRadius: 8,
+                                spreadRadius: 1,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
                           ),
-                        ],
+                          child: Icon(
+                            Icons.location_pin,
+                            color: EcoPalette.white.color,
+                            size: 30,
+                          ),
+                        ),
                       ),
-                      child: Icon(
-                        Icons.location_pin,
-                        color: EcoPalette.white.color,
-                        size: 30,
+                    )
+                  ]),
+                  RichAttributionWidget(
+                    attributions: [
+                      TextSourceAttribution(
+                        'OpenStreetMap contributors',
+                        onTap: () {},
                       ),
-                    ),
-                  )
-                ]),
-                RichAttributionWidget(
-                  attributions: [
-                    TextSourceAttribution(
-                      'OpenStreetMap contributors',
-                      onTap: () {},
-                    ),
-                  ],
-                ),
-              ]
+                    ],
+                  ),
+                ]
+              ),
             )
           ]
         ),
