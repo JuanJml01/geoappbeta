@@ -14,33 +14,76 @@ class Login extends StatelessWidget {
     double screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
-      body: DecoratedBox(
-        decoration: BoxDecoration(color: Mocha.base.color),
-        child: Center(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              SizedBox(
-                height: screenHeight * 0.1,
-              ),
-              TituloApp(screenWidth: screenWidth, screenHeight: screenHeight),
-              SizedBox(
-                height: screenHeight * 0.30,
-              ),
-              BotonLoginGoogle(
-                  screenWidth: screenWidth, screenHeight: screenHeight),
-              BotonLoginAno(
-                  screenWidth: screenWidth, screenHeight: screenHeight),
-              SizedBox(
-                height: screenHeight * 0.3,
-              ),
-              TextoInferior(
-                  screenWidth: screenWidth, screenHeight: screenHeight),
-              SizedBox(
-                height: screenHeight * 0.040,
-              )
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              EcoPalette.greenPrimary.color,
+              EcoPalette.greenDark.color,
             ],
+          ),
+        ),
+        child: SafeArea(
+          child: Center(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                SizedBox(height: screenHeight * 0.08),
+                TituloApp(screenWidth: screenWidth, screenHeight: screenHeight),
+                SizedBox(height: screenHeight * 0.04),
+                Container(
+                  width: screenWidth * 0.8,
+                  padding: EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: EcoPalette.white.color.withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: EcoPalette.black.color.withOpacity(0.1),
+                        blurRadius: 10,
+                        spreadRadius: 1,
+                        offset: Offset(0, 5),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.eco,
+                        size: screenWidth * 0.15,
+                        color: EcoPalette.greenPrimary.color,
+                      ),
+                      SizedBox(height: screenHeight * 0.02),
+                      Text(
+                        "Bienvenido a GeopApp",
+                        style: TextStyle(
+                          fontSize: (screenWidth + screenHeight) * 0.018,
+                          fontWeight: FontWeight.bold,
+                          color: EcoPalette.greenDark.color,
+                        ),
+                      ),
+                      SizedBox(height: screenHeight * 0.01),
+                      Text(
+                        "Inicia sesión para continuar",
+                        style: TextStyle(
+                          fontSize: (screenWidth + screenHeight) * 0.012,
+                          color: EcoPalette.gray.color,
+                        ),
+                      ),
+                      SizedBox(height: screenHeight * 0.04),
+                      BotonLoginGoogle(screenWidth: screenWidth, screenHeight: screenHeight),
+                      SizedBox(height: screenHeight * 0.02),
+                      BotonLoginAno(screenWidth: screenWidth, screenHeight: screenHeight),
+                    ],
+                  ),
+                ),
+                Spacer(),
+                TextoInferior(screenWidth: screenWidth, screenHeight: screenHeight),
+                SizedBox(height: screenHeight * 0.04),
+              ],
+            ),
           ),
         ),
       ),
@@ -60,13 +103,26 @@ class TextoInferior extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
+    return Container(
       width: screenWidth * 0.8,
+      padding: EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+      decoration: BoxDecoration(
+        color: EcoPalette.white.color.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(10),
+      ),
       child: Text(
         "lorem ipsum dolor sit ames, connecter advising el super nill tempore inv sociol ad minim venial",
         style: TextStyle(
-            fontSize: (screenWidth + screenHeight) * 0.01,
-            color: Mocha.text.color),
+          fontSize: (screenWidth + screenHeight) * 0.01,
+          color: EcoPalette.white.color,
+          shadows: [
+            Shadow(
+              color: EcoPalette.black.color.withOpacity(0.3),
+              blurRadius: 2,
+              offset: Offset(0, 1),
+            ),
+          ],
+        ),
         textAlign: TextAlign.center,
       ),
     );
@@ -85,14 +141,15 @@ class BotonLoginAno extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TextButton(
-        style: TextButton.styleFrom(
-            backgroundColor: Mocha.lavender.color,
-            side: BorderSide(width: 2),
+    return ElevatedButton(
+        style: ElevatedButton.styleFrom(
+            backgroundColor: EcoPalette.white.color,
+            foregroundColor: EcoPalette.greenPrimary.color,
+            elevation: 2,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10.0),
             ),
-            minimumSize: Size(screenWidth * 0.62, screenHeight * 0.045)),
+            minimumSize: Size(screenWidth * 0.62, screenHeight * 0.055)),
         onPressed: () async {
           try {
             await context.read<SessionProvider>().iniciarAnonimo();
@@ -102,14 +159,27 @@ class BotonLoginAno extends StatelessWidget {
               Navigator.pushNamed(context, "/home");
             }
           } catch (e) {
-            throw ("Error al iniciar sesion anonima: $e");
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text("Error al iniciar sesión anónima"),
+                backgroundColor: EcoPalette.error.color,
+              ),
+            );
           }
         },
-        child: Text(
-          "Iniciar anonimo",
-          style: TextStyle(
-              fontSize: (screenWidth + screenHeight) * 0.014,
-              color: Mocha.mantle.color),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.person_outline),
+            SizedBox(width: 8),
+            Text(
+              "Iniciar como anónimo",
+              style: TextStyle(
+                fontSize: (screenWidth + screenHeight) * 0.014,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
         ));
   }
 }
@@ -126,14 +196,15 @@ class BotonLoginGoogle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TextButton(
-        style: TextButton.styleFrom(
-            backgroundColor: Mocha.text.color,
-            side: BorderSide(width: 2),
+    return ElevatedButton(
+        style: ElevatedButton.styleFrom(
+            backgroundColor: EcoPalette.accent.color,
+            foregroundColor: EcoPalette.white.color,
+            elevation: 2,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10.0),
             ),
-            minimumSize: Size(screenWidth * 0.62, screenHeight * 0.045)),
+            minimumSize: Size(screenWidth * 0.62, screenHeight * 0.055)),
         onPressed: () async {
           try {
             await context.read<SessionProvider>().iniciarGoogle();
@@ -143,14 +214,27 @@ class BotonLoginGoogle extends StatelessWidget {
               Navigator.pushNamed(context, "/home");
             }
           } catch (e) {
-            throw ("Error al iniciar sesion con google: $e");
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text("Error al iniciar sesión con Google"),
+                backgroundColor: EcoPalette.error.color,
+              ),
+            );
           }
         },
-        child: Text(
-          "Iniciar con google",
-          style: TextStyle(
-              fontSize: (screenWidth + screenHeight) * 0.014,
-              color: Mocha.mantle.color),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.login),
+            SizedBox(width: 8),
+            Text(
+              "Iniciar con Google",
+              style: TextStyle(
+                fontSize: (screenWidth + screenHeight) * 0.014,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
         ));
   }
 }
@@ -167,12 +251,32 @@ class TituloApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      "GeopApp beta",
-      style: TextStyle(
-          color: Mocha.green.color,
-          fontSize: (screenWidth + screenHeight) * 0.026,
-          fontWeight: FontWeight.bold),
+    return Column(
+      children: [
+        Text(
+          "GeopApp",
+          style: TextStyle(
+            color: EcoPalette.white.color,
+            fontSize: (screenWidth + screenHeight) * 0.035,
+            fontWeight: FontWeight.bold,
+            shadows: [
+              Shadow(
+                color: EcoPalette.black.color.withOpacity(0.3),
+                blurRadius: 3,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+        ),
+        Text(
+          "Cuidando el planeta juntos",
+          style: TextStyle(
+            color: EcoPalette.white.color.withOpacity(0.9),
+            fontSize: (screenWidth + screenHeight) * 0.014,
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+      ],
     );
   }
 }

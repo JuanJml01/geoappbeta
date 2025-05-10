@@ -3,9 +3,11 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:geoapptest/Pages/beta_login.dart';
 import 'package:geoapptest/Pages/beta_subiendo_r.dart';
 import 'package:geoapptest/Pages/beta_ver_reporte.dart';
+import 'package:geoapptest/Pages/todos_reportes.dart';
 import 'package:geoapptest/Provider/reporteProvider.dart';
 import 'package:geoapptest/Provider/userProvider.dart';
 import 'package:geoapptest/Service/tomarFoto.dart';
+import 'package:geoapptest/mocha.dart';
 import 'package:geoapptest/skeleton.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -39,7 +41,47 @@ class MyApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         title: 'GeopApp',
         theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+          colorScheme: ColorScheme(
+            primary: EcoPalette.greenPrimary.color,
+            secondary: EcoPalette.accent.color,
+            surface: EcoPalette.white.color,
+            background: EcoPalette.sand.color,
+            error: EcoPalette.error.color,
+            onPrimary: EcoPalette.white.color,
+            onSecondary: EcoPalette.white.color,
+            onSurface: EcoPalette.black.color,
+            onBackground: EcoPalette.black.color,
+            onError: EcoPalette.white.color,
+            brightness: Brightness.light,
+          ),
+          scaffoldBackgroundColor: EcoPalette.sand.color,
+          appBarTheme: AppBarTheme(
+            backgroundColor: EcoPalette.greenPrimary.color,
+            foregroundColor: EcoPalette.white.color,
+            elevation: 0,
+          ),
+          elevatedButtonTheme: ElevatedButtonThemeData(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: EcoPalette.greenPrimary.color,
+              foregroundColor: EcoPalette.white.color,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+          cardTheme: CardTheme(
+            color: EcoPalette.white.color,
+            elevation: 2,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          textTheme: TextTheme(
+            titleLarge: TextStyle(color: EcoPalette.greenDark.color, fontWeight: FontWeight.bold),
+            titleMedium: TextStyle(color: EcoPalette.greenPrimary.color),
+            bodyLarge: TextStyle(color: EcoPalette.black.color),
+            bodyMedium: TextStyle(color: EcoPalette.black.color),
+          ),
           useMaterial3: true,
         ),
         initialRoute: '/',
@@ -47,7 +89,8 @@ class MyApp extends StatelessWidget {
           '/': (context) => Login(),
           '/home': (context) => Skeleton(),
           '/subiendo': (context) => SubiendoReporte(),
-          '/verReporte': (context) => VerReporte()
+          '/verReporte': (context) => VerReporte(),
+          '/todosReportes': (context) => const TodosReportesPage(),
         },
       ),
     );

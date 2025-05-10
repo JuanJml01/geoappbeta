@@ -30,6 +30,7 @@ class _HomeState extends State<Home> {
   ));
 
   bool isInitialized = false;
+  bool isMapLoading = true;
 
   @override
   void initState() {
@@ -47,7 +48,14 @@ class _HomeState extends State<Home> {
         });
       }
     } catch (e) {
-      throw ("Error obteniendo posición: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Error al obtener la posición: $e"),
+            backgroundColor: EcoPalette.error.color,
+          ),
+        );
+      }
     }
   }
 
@@ -63,30 +71,32 @@ class _HomeState extends State<Home> {
           barrierDismissible: false,
           builder: (BuildContext context) {
             return AlertDialog(
-              backgroundColor: Mocha.base.color,
+              backgroundColor: EcoPalette.white.color,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               title: Text(
                 'Ubicación desactivada',
-                style: TextStyle(color: Mocha.text.color),
+                style: TextStyle(color: EcoPalette.greenDark.color, fontWeight: FontWeight.bold),
               ),
               content: Text(
                 'Para usar esta aplicación, necesitas activar los servicios de ubicación.',
-                style: TextStyle(color: Mocha.text.color),
+                style: TextStyle(color: EcoPalette.black.color),
               ),
               actions: <Widget>[
                 TextButton(
                   child: Text(
                     'Cancelar',
-                    style: TextStyle(color: Mocha.red.color),
+                    style: TextStyle(color: EcoPalette.error.color),
                   ),
                   onPressed: () {
                     Navigator.of(context).pop();
                   },
                 ),
-                TextButton(
-                  child: Text(
-                    'Activar',
-                    style: TextStyle(color: Mocha.green.color),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: EcoPalette.greenPrimary.color,
+                    foregroundColor: EcoPalette.white.color,
                   ),
+                  child: Text('Activar'),
                   onPressed: () async {
                     Navigator.of(context).pop();
                     await Geolocator.openLocationSettings();
@@ -133,129 +143,190 @@ class _HomeState extends State<Home> {
     double screenWidth = MediaQuery.of(context).size.width;
     double screenHeight = MediaQuery.of(context).size.height;
     return Scaffold(
-      floatingActionButton: FloatingActionButton.large(
-        elevation: 20,
-        backgroundColor: Mocha.base.color,
-        foregroundColor: Mocha.blue.color,
+      appBar: AppBar(
+        backgroundColor: EcoPalette.greenPrimary.color,
+        foregroundColor: EcoPalette.white.color,
+        elevation: 0,
+        title: Text(
+          'Mapa de Reportes',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+          ),
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        elevation: 4,
+        backgroundColor: EcoPalette.greenPrimary.color,
+        foregroundColor: EcoPalette.white.color,
         onPressed: () {
-          _mapController.move(
-              LatLng(_positionInit!.latitude, _positionInit!.longitude), 13);
+          if (_positionInit != null) {
+            _mapController.move(
+                LatLng(_positionInit!.latitude, _positionInit!.longitude), 13);
+          }
         },
         child: Icon(Icons.my_location_rounded),
       ),
       body:
           Consumer<Reporteprovider>(builder: (context, reporteprovider, child) {
         if (!isInitialized || _positionInit == null) {
-          return DecoratedBox(
-              decoration: BoxDecoration(color: Mocha.base.color),
+          return Container(
+              color: EcoPalette.sand.color,
               child: Center(
-                  child: CircularProgressIndicator(
-                color: Mocha.green.color,
-              )));
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator(
+                        color: EcoPalette.greenPrimary.color,
+                      ),
+                      SizedBox(height: 16),
+                      Text(
+                        'Cargando mapa...',
+                        style: TextStyle(
+                          color: EcoPalette.greenDark.color,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  )));
         }
 
         List<Marker> markers = [];
 
         markers.addAll(reporteprovider.reportes.map((item) {
           return Marker(
-              width: 100,
-              height: 100,
+              width: 50,
+              height: 50,
               alignment: Alignment.center,
               point: LatLng(
                 item.latitud,
                 item.longitud,
               ),
-              child: IconButton(
-                  highlightColor: Mocha.overlay0.color,
-                  color: Mocha.green.color,
-                  alignment: Alignment.center,
-                  iconSize: (screenHeight + screenWidth) * 0.05,
-                  onPressed: () {
-                    Navigator.pushNamed(context, '/verReporte',
-                        arguments: item);
-                  },
-                  icon: Icon(
-                    shadows: [
-                      Shadow(
-                          color: Mocha.base.color,
-                          offset: Offset.fromDirection(290, 3))
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.pushNamed(context, '/verReporte',
+                      arguments: item);
+                },
+                child: Container(
+                  padding: EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: EcoPalette.greenPrimary.color.withOpacity(0.8),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: EcoPalette.black.color.withOpacity(0.3),
+                        blurRadius: 4,
+                        spreadRadius: 1,
+                        offset: Offset(0, 2),
+                      ),
                     ],
+                  ),
+                  child: Icon(
                     Icons.location_pin,
-                  )));
+                    color: EcoPalette.white.color,
+                    size: 20,
+                  ),
+                ),
+              ));
         }));
 
-        return FlutterMap(
-          options: MapOptions(
-              initialCenter: LatLng(_positionInit!.latitude, _positionInit!.longitude),
-              initialZoom: 13,
-              minZoom: 4,
-              maxZoom: 18,
-              onMapReady: () {
-                LoggerService().logMapInteraction(
-                  action: 'MAP_READY',
-                  details: {
-                    'initial_position': {
-                      'lat': _positionInit!.latitude,
-                      'lng': _positionInit!.longitude
-                    }
-                  },
-                );
-              },
-              onPositionChanged: (position, hasGesture) {
-                if (hasGesture) {
-                  LoggerService().logMapInteraction(
-                    action: 'MAP_MOVED',
-                    details: {
-                      'new_position': {
-                        'lat': position.center!.latitude,
-                        'lng': position.center!.longitude,
-                        'zoom': position.zoom
-                      }
-                    },
-                  );
-                }
-              }),
-          mapController: _mapController,
+        return Stack(
           children: [
-            TileLayer(
-              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-              userAgentPackageName: 'com.geoapp.app',
-              backgroundColor: Mocha.base.color,
-              tileBuilder: (context, tileWidget, tile) {
-                return ColorFiltered(
-                  colorFilter: ColorFilter.mode(
-                    Mocha.surface0.color.withOpacity(0.1),
-                    BlendMode.srcOver,
+            Container(
+              color: EcoPalette.sand.color,
+              child: FlutterMap(
+                options: MapOptions(
+                  initialCenter: LatLng(_positionInit!.latitude, _positionInit!.longitude),
+                  initialZoom: 13,
+                  minZoom: 4,
+                  maxZoom: 18,
+                  onMapReady: () {
+                    setState(() {
+                      isMapLoading = false;
+                    });
+                    LoggerService().logMapInteraction(
+                      action: 'MAP_READY',
+                      details: {
+                        'initial_position': {
+                          'lat': _positionInit!.latitude,
+                          'lng': _positionInit!.longitude
+                        }
+                      },
+                    );
+                  },
+                  onPositionChanged: (position, hasGesture) {
+                    if (hasGesture) {
+                      LoggerService().logMapInteraction(
+                        action: 'MAP_MOVED',
+                        details: {
+                          'new_position': {
+                            'lat': position.center!.latitude,
+                            'lng': position.center!.longitude,
+                            'zoom': position.zoom
+                          }
+                        },
+                      );
+                    }
+                  }),
+                mapController: _mapController,
+                children: [
+                  TileLayer(
+                    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    userAgentPackageName: 'com.geoapp.app',
+                    tileProvider: NetworkTileProvider(),
+                    errorImage: Image.asset('assets/map_placeholder.png').image,
                   ),
-                  child: tileWidget,
-                );
-              },
+                  CurrentLocationLayer(
+                    positionStream: _positionStream,
+                    style: LocationMarkerStyle(
+                      marker: DefaultLocationMarker(
+                        color: EcoPalette.info.color,
+                        child: Icon(
+                          Icons.person,
+                          color: EcoPalette.white.color,
+                          size: 12,
+                        ),
+                      ),
+                      markerSize: const Size(22, 22),
+                      accuracyCircleColor: EcoPalette.info.color.withOpacity(0.3),
+                      headingSectorColor: EcoPalette.info.color.withOpacity(0.8),
+                      headingSectorRadius: 60,
+                    ),
+                  ),
+                  MarkerLayer(markers: markers),
+                  RichAttributionWidget(
+                    attributions: [
+                      TextSourceAttribution(
+                        'OpenStreetMap contributors',
+                        onTap: () {},
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-            CurrentLocationLayer(
-              style: LocationMarkerStyle(
-                headingSectorRadius: (screenHeight * screenWidth) * 0.0003,
-                headingSectorColor: Mocha.blue.color.withOpacity(0.8),
-                accuracyCircleColor: Mocha.blue.color.withOpacity(0.3),
-                markerSize: Size.square((screenHeight + screenWidth) * 0.025),
-                marker: const DefaultLocationMarker(
-                  child: Icon(
-                    Icons.navigation,
-                    color: Colors.white,
-                    size: 14,
+            if (isMapLoading)
+              Container(
+                color: EcoPalette.sand.color.withOpacity(0.7),
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator(
+                        color: EcoPalette.greenPrimary.color,
+                      ),
+                      SizedBox(height: 16),
+                      Text(
+                        'Cargando mapa...',
+                        style: TextStyle(
+                          color: EcoPalette.greenDark.color,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-              positionStream: _positionStream,
-            ),
-            MarkerLayer(markers: markers),
-            RichAttributionWidget(
-              attributions: [
-                TextSourceAttribution(
-                  'OpenStreetMap contributors',
-                  onTap: () {},
-                ),
-              ],
-            ),
           ],
         );
       }),

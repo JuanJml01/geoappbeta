@@ -3,6 +3,8 @@ import 'package:geoapptest/Pages/beta_config.dart';
 import 'package:geoapptest/Pages/beta_home.dart';
 import 'package:geoapptest/Pages/beta_subir_reporte.dart';
 import 'package:geoapptest/mocha.dart';
+import 'package:geoapptest/Pages/todos_reportes.dart';
+import 'package:geoapptest/Pages/mi_perfil.dart';
 
 class Skeleton extends StatefulWidget {
   const Skeleton({super.key});
@@ -30,21 +32,25 @@ class _SkeletonState extends State<Skeleton> {
 
     BottomNavigationBar barraNavegacion = BottomNavigationBar(
         showSelectedLabels: true,
-        unselectedItemColor: Mocha.surface2.color,
-        selectedItemColor: Mocha.overlay2.color,
-        backgroundColor: Mocha.surface0.color,
+        unselectedItemColor: EcoPalette.gray.color,
+        selectedItemColor: EcoPalette.greenPrimary.color,
+        backgroundColor: EcoPalette.white.color,
         type: BottomNavigationBarType.fixed,
         iconSize: (screenWidth + screenHeight) * 0.027,
         selectedFontSize: (screenWidth + screenHeight) * 0.012,
         unselectedFontSize: (screenWidth + screenHeight) * 0.01,
         currentIndex: _selectedIndex,
         onTap: _itemTap,
+        elevation: 8,
         items: [
           BottomNavigationBarItem(
-              icon: Icon(Icons.camera), label: "Subir reporte"),
+              icon: Icon(Icons.list_alt), label: "Reportes"),
           BottomNavigationBarItem(
-              icon: Icon(Icons.home), label: "Ver reportes"),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: "Mi cuenta")
+              icon: Icon(Icons.map), label: "Mapa"),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.add_circle_outline), label: "Nuevo"),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.person), label: "Perfil"),
         ]);
     return PopScope(
       canPop: true,
@@ -62,7 +68,7 @@ class _SkeletonState extends State<Skeleton> {
               });
             },
             controller: _pageController,
-            children: [SubirReporte(), Home(), UsuarioConfig()]),
+            children: [TodosReportesPage(), Home(), SubirReporte(), MiPerfilPage()]),
         bottomNavigationBar: barraNavegacion,
       ),
     );

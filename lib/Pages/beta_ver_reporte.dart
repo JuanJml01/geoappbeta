@@ -3,7 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:geoapptest/Model/reporteModel.dart';
 import 'package:geoapptest/Service/logger_service.dart';
 import 'package:geoapptest/mocha.dart';
-
+import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
 
 class VerReporte extends StatefulWidget {
@@ -21,150 +21,386 @@ class _VerReporteState extends State<VerReporte> {
     double screenWidth = MediaQuery.of(context).size.width;
     double screenHeight = MediaQuery.of(context).size.height;
     final args = ModalRoute.of(context)!.settings.arguments as Reporte;
+    
     return DefaultTabController(
-        length: 2,
-        child: Scaffold(
-          floatingActionButton: FloatingActionButton.large(
-            elevation: 20,
-            backgroundColor: Mocha.base.color,
-            foregroundColor: Mocha.blue.color,
-            onPressed: () {
-              _mapcontroller.move(LatLng(args.latitud, args.longitud), 15);
-            },
-            child: Icon(Icons.my_location_rounded),
+      length: 2,
+      child: Scaffold(
+        backgroundColor: EcoPalette.sand.color,
+        floatingActionButton: FloatingActionButton(
+          elevation: 4,
+          backgroundColor: EcoPalette.greenPrimary.color,
+          foregroundColor: EcoPalette.white.color,
+          onPressed: () {
+            _mapcontroller.move(LatLng(args.latitud, args.longitud), 15);
+          },
+          child: Icon(Icons.my_location_rounded),
+        ),
+        appBar: AppBar(
+          backgroundColor: EcoPalette.greenPrimary.color,
+          foregroundColor: EcoPalette.white.color,
+          elevation: 0,
+          title: Text(
+            'Detalle del reporte',
+            style: TextStyle(fontWeight: FontWeight.bold),
           ),
-          appBar: AppBar(
-              foregroundColor: Mocha.green.color,
-              backgroundColor: Mocha.base.color,
-              bottom: TabBar(
-                unselectedLabelStyle:
-                    TextStyle(fontSize: (screenHeight + screenWidth) * 0.013),
-                labelStyle:
-                    TextStyle(fontSize: (screenHeight + screenWidth) * 0.017),
-                indicatorColor: Mocha.overlay2.color,
-                labelColor: Mocha.overlay2.color,
-                unselectedLabelColor: Mocha.surface2.color,
-                labelPadding:
-                    EdgeInsets.symmetric(horizontal: screenWidth * 0.1),
-                indicatorWeight: 5,
-                tabAlignment: TabAlignment.center,
-                isScrollable: true,
-                tabs: [
-                  Tab(
-                    text: "Informacion",
-                    icon: Icon(Icons.info),
-                  ),
-                  Tab(
-                    text: "Mapa",
-                    icon: Icon(Icons.map),
-                  )
-                ],
-              )),
-          body: Container(
-            color: Mocha.base.color,
-            child: TabBarView(children: [
-              Container(
-                  color: Mocha.base.color,
-                  margin: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
-                  child: ListView(
-                    children: [
-                      SizedBox(
-                        height: screenHeight * 0.05,
-                      ),
-                      Text(
-                        "Correo: ${args.email}",
-                        style: TextStyle(
-                            fontSize: (screenHeight + screenWidth) * 0.014,
-                            color: Mocha.text.color),
-                      ),
-                      SizedBox(
-                        height: screenHeight * 0.02,
-                      ),
-                      Text(
-                        "Descripcion: ${args.descripcion}",
-                        style: TextStyle(
-                            fontSize: (screenHeight + screenWidth) * 0.014,
-                            color: Mocha.subtext0.color),
-                      ),
-                      SizedBox(
-                        height: screenHeight * 0.02,
-                      ),
-                      Image.network(args.imagen)
-                    ],
-                  )),
-              FlutterMap(
-                  mapController: _mapcontroller,
-                  options: MapOptions(
-                      initialZoom: 15,
-                      minZoom: 4,
-                      maxZoom: 18,
-                      initialCenter: LatLng(args.latitud, args.longitud),
-                      onMapReady: () {
-                        LoggerService().logMapInteraction(
-                          action: 'REPORT_MAP_READY',
-                          details: {
-                            'report_position': {
-                              'lat': args.latitud,
-                              'lng': args.longitud
-                            }
-                          },
-                        );
-                      }),
+          bottom: TabBar(
+            labelStyle: TextStyle(
+              fontSize: 16, 
+              fontWeight: FontWeight.bold
+            ),
+            unselectedLabelStyle: TextStyle(
+              fontSize: 14
+            ),
+            indicatorColor: EcoPalette.white.color,
+            labelColor: EcoPalette.white.color,
+            unselectedLabelColor: EcoPalette.white.color.withOpacity(0.7),
+            indicatorWeight: 3,
+            tabs: [
+              Tab(
+                text: "Información",
+                icon: Icon(Icons.info_outline),
+              ),
+              Tab(
+                text: "Ubicación",
+                icon: Icon(Icons.map_outlined),
+              )
+            ],
+          ),
+        ),
+        body: TabBarView(
+          children: [
+            // Pestaña de información
+            Container(
+              color: EcoPalette.sand.color,
+              child: SingleChildScrollView(
+                padding: EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    TileLayer(
-                      urlTemplate:
-                          'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                      userAgentPackageName: 'com.geoapp.app',
-                      backgroundColor: Mocha.base.color,
-                      tileBuilder: (context, tileWidget, tile) {
-                        return ColorFiltered(
-                          colorFilter: ColorFilter.mode(
-                            Mocha.surface0.color.withOpacity(0.1),
-                            BlendMode.srcOver,
+                    // Imagen del reporte
+                    Hero(
+                      tag: 'reporte-${args.id}',
+                      child: Container(
+                        width: double.infinity,
+                        height: screenHeight * 0.3,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: EcoPalette.black.color.withOpacity(0.2),
+                              blurRadius: 10,
+                              offset: Offset(0, 5),
+                            ),
+                          ],
+                          image: DecorationImage(
+                            image: NetworkImage(args.imagen),
+                            fit: BoxFit.cover,
                           ),
-                          child: tileWidget,
-                        );
-                      },
+                        ),
+                      ),
                     ),
-                    MarkerLayer(markers: [
-                      Marker(
-                          width: 100,
-                          height: 100,
-                          alignment: Alignment.center,
-                          point: LatLng(
-                            args.latitud,
-                            args.longitud,
-                          ),
+                    
+                    SizedBox(height: 24),
+                    
+                    // Tipo y estado del reporte
+                    Row(
+                      children: [
+                        Expanded(
                           child: Container(
+                            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                             decoration: BoxDecoration(
-                              color: Mocha.green.color.withOpacity(0.8),
-                              shape: BoxShape.circle,
+                              color: EcoPalette.white.color,
+                              borderRadius: BorderRadius.circular(12),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Mocha.base.color.withOpacity(0.5),
-                                  blurRadius: 8,
-                                  spreadRadius: 2,
+                                  color: EcoPalette.black.color.withOpacity(0.05),
+                                  blurRadius: 5,
+                                  offset: Offset(0, 2),
                                 ),
                               ],
                             ),
-                            child: Icon(
-                              Icons.location_pin,
-                              color: Mocha.crust.color,
-                              size: (screenHeight + screenWidth) * 0.05,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.category,
+                                  color: EcoPalette.greenPrimary.color,
+                                  size: 20,
+                                ),
+                                SizedBox(width: 8),
+                                Text(
+                                  tipoReporteToString(args.tipo),
+                                  style: TextStyle(
+                                    color: EcoPalette.greenDark.color,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ))
-                    ]),
-                    RichAttributionWidget(
-                      attributions: [
-                        TextSourceAttribution(
-                          'OpenStreetMap contributors',
-                          onTap: () {},
+                          ),
+                        ),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: Container(
+                            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                            decoration: BoxDecoration(
+                              color: _getEstadoColor(estadoReporteToString(args.estado)).withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: EcoPalette.black.color.withOpacity(0.05),
+                                  blurRadius: 5,
+                                  offset: Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.flag,
+                                  color: _getEstadoColor(estadoReporteToString(args.estado)),
+                                  size: 20,
+                                ),
+                                SizedBox(width: 8),
+                                Text(
+                                  estadoReporteToString(args.estado),
+                                  style: TextStyle(
+                                    color: _getEstadoColor(estadoReporteToString(args.estado)),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ],
                     ),
-                  ])
-            ]),
-          ),
-        ));
+                    
+                    SizedBox(height: 24),
+                    
+                    // Información del reporte
+                    Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: EcoPalette.white.color,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: EcoPalette.black.color.withOpacity(0.05),
+                            blurRadius: 5,
+                            offset: Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Fecha
+                          Row(
+                            children: [
+                              Icon(Icons.calendar_today, 
+                                size: 16, 
+                                color: EcoPalette.greenPrimary.color
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                'Fecha: ${DateFormat('dd/MM/yyyy - HH:mm').format(args.createdAt)}',
+                                style: TextStyle(
+                                  color: EcoPalette.greenDark.color,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                          
+                          SizedBox(height: 12),
+                          
+                          // Correo del reportante
+                          Row(
+                            children: [
+                              Icon(Icons.email, 
+                                size: 16, 
+                                color: EcoPalette.greenPrimary.color
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                'Reportado por:',
+                                style: TextStyle(
+                                  color: EcoPalette.greenDark.color,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Padding(
+                            padding: EdgeInsets.only(left: 24),
+                            child: Text(
+                              args.email,
+                              style: TextStyle(
+                                color: EcoPalette.black.color,
+                                fontSize: 15,
+                              ),
+                            ),
+                          ),
+                          
+                          SizedBox(height: 16),
+                          
+                          // Descripción
+                          Row(
+                            children: [
+                              Icon(Icons.description, 
+                                size: 16, 
+                                color: EcoPalette.greenPrimary.color
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                'Descripción:',
+                                style: TextStyle(
+                                  color: EcoPalette.greenDark.color,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 8),
+                          Container(
+                            width: double.infinity,
+                            padding: EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: EcoPalette.sand.color,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              args.descripcion,
+                              style: TextStyle(
+                                color: EcoPalette.black.color,
+                                fontSize: 15,
+                              ),
+                            ),
+                          ),
+                          
+                          SizedBox(height: 16),
+                          
+                          // Coordenadas
+                          Row(
+                            children: [
+                              Icon(Icons.location_on, 
+                                size: 16, 
+                                color: EcoPalette.greenPrimary.color
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                'Coordenadas:',
+                                style: TextStyle(
+                                  color: EcoPalette.greenDark.color,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Padding(
+                            padding: EdgeInsets.only(left: 24),
+                            child: Text(
+                              'Latitud: ${args.latitud.toStringAsFixed(6)}\nLongitud: ${args.longitud.toStringAsFixed(6)}',
+                              style: TextStyle(
+                                color: EcoPalette.black.color,
+                                fontSize: 15,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            
+            // Pestaña del mapa
+            FlutterMap(
+              mapController: _mapcontroller,
+              options: MapOptions(
+                initialZoom: 15,
+                minZoom: 4,
+                maxZoom: 18,
+                initialCenter: LatLng(args.latitud, args.longitud),
+                onMapReady: () {
+                  LoggerService().logMapInteraction(
+                    action: 'REPORT_MAP_READY',
+                    details: {
+                      'report_position': {
+                        'lat': args.latitud,
+                        'lng': args.longitud
+                      }
+                    },
+                  );
+                }
+              ),
+              children: [
+                TileLayer(
+                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'com.geoapp.app',
+                ),
+                MarkerLayer(markers: [
+                  Marker(
+                    width: 80,
+                    height: 80,
+                    alignment: Alignment.center,
+                    point: LatLng(
+                      args.latitud,
+                      args.longitud,
+                    ),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: EcoPalette.greenPrimary.color.withOpacity(0.8),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: EcoPalette.black.color.withOpacity(0.3),
+                            blurRadius: 8,
+                            spreadRadius: 1,
+                            offset: Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        Icons.location_pin,
+                        color: EcoPalette.white.color,
+                        size: 30,
+                      ),
+                    ),
+                  )
+                ]),
+                RichAttributionWidget(
+                  attributions: [
+                    TextSourceAttribution(
+                      'OpenStreetMap contributors',
+                      onTap: () {},
+                    ),
+                  ],
+                ),
+              ]
+            )
+          ]
+        ),
+      )
+    );
+  }
+  
+  Color _getEstadoColor(String estado) {
+    switch (estado.toLowerCase()) {
+      case 'pendiente':
+        return EcoPalette.warning.color;
+      case 'en proceso':
+        return EcoPalette.info.color;
+      case 'resuelto':
+        return EcoPalette.success.color;
+      default:
+        return EcoPalette.info.color;
+    }
   }
 }

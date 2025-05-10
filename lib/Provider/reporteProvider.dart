@@ -69,7 +69,10 @@ class Reporteprovider with ChangeNotifier {
       'imagen': await storage(foto: File(data.imagen)),
       'latitud': data.latitud,
       'longitud': data.longitud,
-      'descripcion': data.descripcion
+      'descripcion': data.descripcion,
+      'tipo': data.tipo,
+      'estado': data.estado,
+      'created_at': data.createdAt.toIso8601String(),
     });
   }
 }

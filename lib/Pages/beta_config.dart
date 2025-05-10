@@ -15,7 +15,7 @@ class _UsuarioConfigState extends State<UsuarioConfig> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: DecoratedBox(
-        decoration: BoxDecoration(color: Mocha.base.color),
+        decoration: BoxDecoration(color: EcoPalette.sand.color),
         child: Center(
           child: TextButton(
               onPressed: () async {
@@ -28,7 +28,7 @@ class _UsuarioConfigState extends State<UsuarioConfig> {
               },
               child: Text(
                 "Salir Cuenta",
-                style: TextStyle(color: Mocha.text.color),
+                style: TextStyle(color: EcoPalette.greenDark.color),
               )),
         ),
       ),
