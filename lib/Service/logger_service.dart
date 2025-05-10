@@ -8,6 +8,18 @@ class LoggerService {
 
   final _supabase = Supabase.instance.client;
 
+  void _printLog(String type, String message, {Map<String, dynamic>? data}) {
+    final timestamp = DateTime.now().toString();
+    final logMessage = '''
+╔════════════════════════════════════════════════════════════════════════════
+║ $type - $timestamp
+║ $message
+${data != null ? '║ Datos adicionales: $data' : ''}
+╚════════════════════════════════════════════════════════════════════════════
+''';
+    debugPrint(logMessage);
+  }
+
   Future<void> logUserAction({
     required String action,
     required String details,
@@ -25,13 +37,9 @@ class LoggerService {
       };
 
       await _supabase.from('user_logs').insert(logData);
-      if (kDebugMode) {
-        print('Log registrado: $action - $details');
-      }
+      _printLog('ACCION', '$action - $details', data: additionalData);
     } catch (e) {
-      if (kDebugMode) {
-        print('Error al registrar log: $e');
-      }
+      _printLog('ERROR', 'Error al registrar log: $e');
     }
   }
 
@@ -48,6 +56,17 @@ class LoggerService {
         'image_url': imageUrl,
         'report_id': reportId,
       },
+    );
+  }
+
+  Future<void> logMapInteraction({
+    required String action,
+    required Map<String, dynamic> details,
+  }) async {
+    await logUserAction(
+      action: 'MAP_INTERACTION',
+      details: action,
+      additionalData: details,
     );
   }
 } 

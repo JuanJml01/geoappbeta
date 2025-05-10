@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geoapptest/Model/reporteModel.dart';
+import 'package:geoapptest/Service/logger_service.dart';
 import 'package:geoapptest/mocha.dart';
 
 import 'package:latlong2/latlong.dart';
@@ -95,11 +96,35 @@ class _VerReporteState extends State<VerReporte> {
                   mapController: _mapcontroller,
                   options: MapOptions(
                       initialZoom: 15,
-                      initialCenter: LatLng(args.latitud, args.longitud)),
+                      minZoom: 4,
+                      maxZoom: 18,
+                      initialCenter: LatLng(args.latitud, args.longitud),
+                      onMapReady: () {
+                        LoggerService().logMapInteraction(
+                          action: 'REPORT_MAP_READY',
+                          details: {
+                            'report_position': {
+                              'lat': args.latitud,
+                              'lng': args.longitud
+                            }
+                          },
+                        );
+                      }),
                   children: [
                     TileLayer(
                       urlTemplate:
                           'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      userAgentPackageName: 'com.geoapp.app',
+                      backgroundColor: Mocha.base.color,
+                      tileBuilder: (context, tileWidget, tile) {
+                        return ColorFiltered(
+                          colorFilter: ColorFilter.mode(
+                            Mocha.surface0.color.withOpacity(0.1),
+                            BlendMode.srcOver,
+                          ),
+                          child: tileWidget,
+                        );
+                      },
                     ),
                     MarkerLayer(markers: [
                       Marker(
@@ -110,18 +135,33 @@ class _VerReporteState extends State<VerReporte> {
                             args.latitud,
                             args.longitud,
                           ),
-                          child: Icon(
-                            shadows: [
-                              Shadow(
-                                  blurRadius: 4,
-                                  color: Mocha.base.color,
-                                  offset: Offset.fromDirection(290, 3))
-                            ],
-                            size: (screenHeight + screenWidth) * 0.05,
-                            color: Mocha.green.color,
-                            Icons.location_pin,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Mocha.green.color.withOpacity(0.8),
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Mocha.base.color.withOpacity(0.5),
+                                  blurRadius: 8,
+                                  spreadRadius: 2,
+                                ),
+                              ],
+                            ),
+                            child: Icon(
+                              Icons.location_pin,
+                              color: Mocha.crust.color,
+                              size: (screenHeight + screenWidth) * 0.05,
+                            ),
                           ))
                     ]),
+                    RichAttributionWidget(
+                      attributions: [
+                        TextSourceAttribution(
+                          'OpenStreetMap contributors',
+                          onTap: () {},
+                        ),
+                      ],
+                    ),
                   ])
             ]),
           ),
