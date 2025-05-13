@@ -3,6 +3,8 @@
 import 'package:flutter/material.dart';
 import 'package:geoapptest/Provider/userProvider.dart';
 import 'package:geoapptest/Provider/usuarioProvider.dart';
+import 'package:geoapptest/Service/error_service.dart';
+import 'package:geoapptest/Widgets/loading_dialog.dart';
 import 'package:provider/provider.dart';
 import 'package:geoapptest/mocha.dart';
 
@@ -153,16 +155,8 @@ class BotonLoginAno extends StatelessWidget {
             minimumSize: Size(screenWidth * 0.62, screenHeight * 0.055)),
         onPressed: () async {
           try {
-            // Mostrar indicador de carga
-            showDialog(
-              context: context,
-              barrierDismissible: false,
-              builder: (context) => Center(
-                child: CircularProgressIndicator(
-                  color: EcoPalette.white.color,
-                ),
-              ),
-            );
+            // Mostrar diálogo de carga
+            LoadingDialog.show(context, mensaje: 'Iniciando sesión...');
             
             await context.read<SessionProvider>().iniciarAnonimo();
             if (context.read<SessionProvider>().user == null) {
@@ -173,7 +167,7 @@ class BotonLoginAno extends StatelessWidget {
               await usuarioProvider.inicializar();
               
               // Cerrar el diálogo de carga
-              Navigator.pop(context);
+              LoadingDialog.hide(context);
               
               // Navegar a la pantalla principal
               Navigator.pushNamedAndRemoveUntil(
@@ -183,16 +177,14 @@ class BotonLoginAno extends StatelessWidget {
               );
             }
           } catch (e) {
-            // Cerrar el diálogo de carga si está visible
-            if (Navigator.canPop(context)) {
-              Navigator.pop(context);
-            }
+            // Cerrar el diálogo de carga
+            LoadingDialog.hide(context);
             
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text("Error al iniciar sesión anónima: ${e.toString()}"),
-                backgroundColor: EcoPalette.error.color,
-              ),
+            // Mostrar error con el nuevo servicio
+            ErrorService.mostrarError(
+              context: context,
+              titulo: 'Error de inicio de sesión',
+              mensaje: ErrorService.obtenerMensajeError(e),
             );
           }
         },
@@ -236,16 +228,8 @@ class BotonLoginGoogle extends StatelessWidget {
             minimumSize: Size(screenWidth * 0.62, screenHeight * 0.055)),
         onPressed: () async {
           try {
-            // Mostrar indicador de carga
-            showDialog(
-              context: context,
-              barrierDismissible: false,
-              builder: (context) => Center(
-                child: CircularProgressIndicator(
-                  color: EcoPalette.white.color,
-                ),
-              ),
-            );
+            // Mostrar diálogo de carga
+            LoadingDialog.show(context, mensaje: 'Conectando con Google...');
             
             await context.read<SessionProvider>().iniciarGoogle();
             if (context.read<SessionProvider>().user == null) {
@@ -256,7 +240,7 @@ class BotonLoginGoogle extends StatelessWidget {
               await usuarioProvider.inicializar();
               
               // Cerrar el diálogo de carga
-              Navigator.pop(context);
+              LoadingDialog.hide(context);
               
               // Navegar a la pantalla principal
               Navigator.pushNamedAndRemoveUntil(
@@ -266,16 +250,14 @@ class BotonLoginGoogle extends StatelessWidget {
               );
             }
           } catch (e) {
-            // Cerrar el diálogo de carga si está visible
-            if (Navigator.canPop(context)) {
-              Navigator.pop(context);
-            }
+            // Cerrar el diálogo de carga
+            LoadingDialog.hide(context);
             
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text("Error al iniciar sesión con Google: ${e.toString()}"),
-                backgroundColor: EcoPalette.error.color,
-              ),
+            // Mostrar error con el nuevo servicio
+            ErrorService.mostrarError(
+              context: context,
+              titulo: 'Error de inicio de sesión',
+              mensaje: ErrorService.obtenerMensajeError(e),
             );
           }
         },

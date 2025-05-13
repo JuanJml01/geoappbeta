@@ -8,7 +8,9 @@ import 'package:flutter/material.dart';
 import 'package:geoapptest/Model/reporteModel.dart';
 import 'package:geoapptest/Provider/reporteProvider.dart';
 import 'package:geoapptest/Provider/userProvider.dart';
+import 'package:geoapptest/Service/error_service.dart';
 import 'package:geoapptest/Service/tomarFoto.dart';
+import 'package:geoapptest/Widgets/loading_dialog.dart';
 import 'package:geoapptest/mocha.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
@@ -154,6 +156,15 @@ class _SubiendoReporteState extends State<SubiendoReporte> with SingleTickerProv
         setState(() {
           if (success) {
             _estado = Estado.completado;
+            // Mostrar mensaje de éxito
+            Future.delayed(Duration(seconds: 2), () {
+              if (mounted) {
+                ErrorService.mostrarSnackBarExito(
+                  context, 
+                  'Tu reporte se ha subido correctamente'
+                );
+              }
+            });
           } else {
             _estado = Estado.error;
             _errorMessage = "No se pudo subir el reporte. Verifica tu conexión a internet.";
@@ -165,14 +176,8 @@ class _SubiendoReporteState extends State<SubiendoReporte> with SingleTickerProv
         setState(() {
           _estado = Estado.error;
           
-          // Personalizar el mensaje de error según el tipo
-          if (e is TimeoutException) {
-            _errorMessage = "La operación tardó demasiado tiempo. Verifica tu conexión a internet.";
-          } else if (e is GeolocatorPlatform) {
-            _errorMessage = "No se pudo acceder a la ubicación del dispositivo.";
-          } else {
-            _errorMessage = "Error: ${e.toString()}";
-          }
+          // Usar el servicio de errores para obtener un mensaje amigable
+          _errorMessage = ErrorService.obtenerMensajeError(e);
         });
       }
       debugPrint('Error en _subirReporte: $e');
@@ -204,13 +209,33 @@ class _SubiendoReporteState extends State<SubiendoReporte> with SingleTickerProv
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
+        // Mostrar un diálogo explicativo cuando se deniegan los permisos
+        if (mounted) {
+          ErrorService.mostrarAdvertencia(
+            context: context,
+            titulo: 'Permisos de ubicación',
+            mensaje: 'Necesitamos acceder a tu ubicación para poder reportar correctamente el problema ambiental. Por favor, activa los permisos de ubicación.',
+            botonTexto: 'Entendido',
+          );
+        }
         return Future.error('Permisos de ubicación denegados.');
       }
     }
 
     if (permission == LocationPermission.deniedForever) {
-      return Future.error(
-          'Los permisos de ubicación están permanentemente denegados.');
+      // Mostrar un diálogo explicativo cuando se deniegan los permisos permanentemente
+      if (mounted) {
+        ErrorService.mostrarAdvertencia(
+          context: context,
+          titulo: 'Permisos de ubicación',
+          mensaje: 'Los permisos de ubicación están permanentemente denegados. Por favor, actívalos en la configuración de tu dispositivo para poder usar esta función.',
+          botonTexto: 'Ir a Configuración',
+          onPressed: () {
+            Geolocator.openAppSettings();
+          },
+        );
+      }
+      return Future.error('Los permisos de ubicación están permanentemente denegados.');
     }
 
     return await Geolocator.getCurrentPosition();
@@ -234,451 +259,277 @@ class _SubiendoReporteState extends State<SubiendoReporte> with SingleTickerProv
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               title: Text(
                 '¿Cancelar envío?',
-                style: TextStyle(color: EcoPalette.greenDark.color, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: EcoPalette.greenDark.color,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               content: Text(
-                'Si sales ahora, se perderá el reporte que estás subiendo.',
+                'Si sales ahora, se cancelará la subida del reporte. ¿Estás seguro?',
                 style: TextStyle(color: EcoPalette.black.color),
               ),
               actions: [
                 TextButton(
-                  child: Text(
-                    'Continuar subiendo',
-                    style: TextStyle(color: EcoPalette.greenPrimary.color),
+                  style: TextButton.styleFrom(
+                    foregroundColor: EcoPalette.gray.color,
                   ),
-                  onPressed: () {
-                    Navigator.pop(context, false);
-                  },
+                  onPressed: () => Navigator.pop(context, false),
+                  child: Text('Continuar subiendo'),
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: EcoPalette.error.color,
                     foregroundColor: EcoPalette.white.color,
                   ),
-                  child: Text('Cancelar envío'),
-                  onPressed: () {
-                    Navigator.pop(context, true);
-                  },
+                  onPressed: () => Navigator.pop(context, true),
+                  child: Text('Cancelar subida'),
                 ),
               ],
             ),
           );
           return salir;
         }
-        // Si el reporte ya se completó o hubo un error, permitir regresar
         return true;
       },
       child: Scaffold(
-        floatingActionButton: ElevatedButton.icon(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: _getStateColor(),
-            foregroundColor: EcoPalette.white.color,
-            elevation: 4,
-            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(30),
-            ),
-          ),
-          onPressed: () {
-            if (_estado != Estado.iniciado) {
-              // Si ya terminó (éxito o error), redirigir al Skeleton
-              Navigator.pushNamedAndRemoveUntil(
-                context, 
-                '/home',
-                (route) => false
-              );
-            } else {
-              // Si aún está en proceso, mostrar el diálogo de confirmación
-              showDialog(
-                context: context,
-                barrierDismissible: false,
-                builder: (context) => AlertDialog(
-                  backgroundColor: EcoPalette.white.color,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  title: Text(
-                    '¿Cancelar envío?',
-                    style: TextStyle(color: EcoPalette.greenDark.color, fontWeight: FontWeight.bold),
-                  ),
-                  content: Text(
-                    'Si sales ahora, se perderá el reporte que estás subiendo.',
-                    style: TextStyle(color: EcoPalette.black.color),
-                  ),
-                  actions: [
-                    TextButton(
-                      child: Text(
-                        'Continuar subiendo',
-                        style: TextStyle(color: EcoPalette.greenPrimary.color),
-                      ),
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                    ),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: EcoPalette.error.color,
-                        foregroundColor: EcoPalette.white.color,
-                      ),
-                      child: Text('Cancelar envío'),
-                      onPressed: () {
-                        Navigator.pop(context);
-                        Navigator.pushNamedAndRemoveUntil(
-                          context,
-                          '/home',
-                          (route) => false
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              );
-            }
-          },
-          icon: Icon(
-            _getStateIcon(),
-            size: 24,
-          ),
-          label: Text(
-            _getStateButtonText(),
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+        backgroundColor: EcoPalette.sand.color,
         appBar: AppBar(
-          foregroundColor: EcoPalette.white.color,
+          title: Text("Subiendo reporte"),
           backgroundColor: EcoPalette.greenPrimary.color,
-          elevation: 0,
-          title: Text(
-            _getStateTitle(),
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 18,
-            ),
-          ),
-          automaticallyImplyLeading: false, // Ocultar botón de retroceso
+          foregroundColor: EcoPalette.white.color,
+          automaticallyImplyLeading: _estado != Estado.iniciado,
         ),
-        body: Container(
-          decoration: BoxDecoration(
-            color: EcoPalette.sand.color,
-          ),
-          child: Center(
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 24),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Ícono animado según el estado
-                  _buildStateIcon(),
-                      
-                  SizedBox(height: 32),
-                  
-                  // Texto de estado
-                  Text(
-                    _getStateText(),
-                    style: TextStyle(
-                      color: _getStateColor(),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 22,
-                    ),
-                  ),
-                  
-                  SizedBox(height: 16),
-                  
-                  // Descripción del estado
-                  Text(
-                    _getStateDescription(),
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: EcoPalette.black.color,
-                      fontSize: 16,
-                    ),
-                  ),
-                  
-                  // Advertencia de tiempo de espera
-                  if (_isTimeoutWarningVisible && _estado == Estado.iniciado)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 16.0),
-                      child: Container(
-                        padding: EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: EcoPalette.warning.color.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Column(
-                          children: [
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.info_outline, color: EcoPalette.warning.color),
-                                SizedBox(width: 8),
-                                Text(
-                                  "Está tardando más de lo esperado",
-                                  style: TextStyle(
-                                    color: EcoPalette.warning.color,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            SizedBox(height: 8),
-                            Text(
-                              "La subida puede tardar más tiempo dependiendo de tu conexión a internet.",
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: EcoPalette.black.color.withOpacity(0.7),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  
-                  SizedBox(height: 32),
-                  
-                  // Tiempo transcurrido
-                  if (_estado == Estado.iniciado)
-                    Container(
-                      padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                      decoration: BoxDecoration(
-                        color: EcoPalette.white.color,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: EcoPalette.black.color.withOpacity(0.1),
-                            blurRadius: 4,
-                            offset: Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.access_time,
-                            size: 16,
-                            color: EcoPalette.greenPrimary.color,
-                          ),
-                          SizedBox(width: 8),
-                          StreamBuilder<String>(
-                            stream: _timer(),
-                            builder: (context, snapshot) {
-                              if (snapshot.hasData) {
-                                return Text(
-                                  "Tiempo: ${snapshot.data}",
-                                  style: TextStyle(
-                                    color: EcoPalette.greenDark.color,
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: 14,
-                                  ),
-                                );
-                              } else {
-                                return Text(
-                                  "Tiempo: 00:00:00",
-                                  style: TextStyle(
-                                    color: EcoPalette.greenDark.color,
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: 14,
-                                  ),
-                                );
-                              }
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                  
-                  SizedBox(height: 32),
-                  
-                  // Barra de progreso
-                  Container(
-                    width: screenWidth * 0.8,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
-                      boxShadow: [
-                        BoxShadow(
-                          color: EcoPalette.black.color.withOpacity(0.1),
-                          blurRadius: 4,
-                          offset: Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: StreamBuilder<double>(
-                        stream: _carga(),
-                        builder: (context, snapshot) {
-                          return LinearProgressIndicator(
-                            value: snapshot.data ?? 0.1,
-                            minHeight: 10,
-                            backgroundColor: EcoPalette.grayLight.color,
-                            valueColor: AlwaysStoppedAnimation<Color>(_getStateColor()),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                  
-                  // Botón para reintentar en caso de error
-                  if (_estado == Estado.error)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 24.0),
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          setState(() {
-                            _estado = Estado.iniciado;
-                            _isTimeoutWarningVisible = false;
-                            _errorMessage = "Ocurrió un error al subir el reporte.";
-                            x = 0;
-                            carga = 0.0;
-                          });
-                          
-                          // Reiniciar el timer
-                          _timeoutTimer?.cancel();
-                          _timeoutTimer = Timer(Duration(seconds: 15), () {
-                            if (mounted && _estado == Estado.iniciado) {
-                              setState(() {
-                                _isTimeoutWarningVisible = true;
-                              });
-                            }
-                          });
-                          
-                          // Reintentar
-                          _subirReporte();
-                        },
-                        icon: Icon(Icons.refresh),
-                        label: Text("Reintentar"),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: EcoPalette.info.color,
-                          foregroundColor: EcoPalette.white.color,
-                          padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildEstadoWidget(screenWidth, screenHeight),
+                SizedBox(height: 32),
+                if (_estado == Estado.error)
+                  _buildErrorWidget(screenWidth, screenHeight),
+                if (_estado == Estado.completado)
+                  _buildCompletadoWidget(screenWidth, screenHeight),
+              ],
             ),
           ),
         ),
       ),
     );
   }
-  
-  // Métodos para obtener información según el estado
-  Widget _buildStateIcon() {
+
+  Widget _buildEstadoWidget(double screenWidth, double screenHeight) {
     switch (_estado) {
+      case Estado.iniciado:
+        return Column(
+          children: [
+            Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                color: EcoPalette.white.color,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: EcoPalette.black.color.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: Center(
+                child: CircularProgressIndicator(
+                  color: EcoPalette.greenPrimary.color,
+                  strokeWidth: 4,
+                ),
+              ),
+            ),
+            SizedBox(height: 24),
+            Text(
+              "Subiendo reporte...",
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: EcoPalette.greenDark.color,
+              ),
+            ),
+            SizedBox(height: 16),
+            Text(
+              "Por favor, espera mientras subimos tu reporte.",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                color: EcoPalette.gray.color,
+              ),
+            ),
+            SizedBox(height: 24),
+            LinearProgressIndicator(
+              backgroundColor: EcoPalette.grayLight.color,
+              color: EcoPalette.greenPrimary.color,
+              minHeight: 8,
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ],
+        );
       case Estado.completado:
         return Container(
-          width: 100,
-          height: 100,
+          width: 120,
+          height: 120,
           decoration: BoxDecoration(
             color: EcoPalette.success.color.withOpacity(0.2),
             shape: BoxShape.circle,
+            border: Border.all(
+              color: EcoPalette.success.color,
+              width: 4,
+            ),
           ),
           child: Icon(
-            Icons.check_circle,
+            Icons.check,
             color: EcoPalette.success.color,
-            size: 64,
+            size: 80,
           ),
         );
       case Estado.error:
         return Container(
-          width: 100,
-          height: 100,
+          width: 120,
+          height: 120,
           decoration: BoxDecoration(
             color: EcoPalette.error.color.withOpacity(0.2),
             shape: BoxShape.circle,
+            border: Border.all(
+              color: EcoPalette.error.color,
+              width: 4,
+            ),
           ),
           child: Icon(
-            Icons.error,
+            Icons.error_outline,
             color: EcoPalette.error.color,
-            size: 64,
-          ),
-        );
-      default: // Estado.iniciado
-        return RotationTransition(
-          turns: _animationController,
-          child: Container(
-            width: 100,
-            height: 100,
-            padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: EcoPalette.greenLight.color.withOpacity(0.2),
-              shape: BoxShape.circle,
-            ),
-            child: CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(EcoPalette.greenPrimary.color),
-              strokeWidth: 3,
-            ),
+            size: 80,
           ),
         );
     }
   }
-  
-  Color _getStateColor() {
-    switch (_estado) {
-      case Estado.completado:
-        return EcoPalette.success.color;
-      case Estado.error:
-        return EcoPalette.error.color;
-      default:
-        return EcoPalette.greenLight.color;
-    }
+
+  Widget _buildErrorWidget(double screenWidth, double screenHeight) {
+    return Column(
+      children: [
+        Text(
+          "Error al subir el reporte",
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: EcoPalette.error.color,
+          ),
+        ),
+        SizedBox(height: 16),
+        Container(
+          padding: EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: EcoPalette.white.color,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: EcoPalette.black.color.withOpacity(0.1),
+                blurRadius: 5,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Text(
+            _errorMessage,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 16,
+              color: EcoPalette.black.color,
+            ),
+          ),
+        ),
+        SizedBox(height: 24),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: EcoPalette.greenPrimary.color,
+                foregroundColor: EcoPalette.white.color,
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+              ),
+              onPressed: () {
+                setState(() {
+                  _estado = Estado.iniciado;
+                  _errorMessage = "";
+                });
+                _subirReporte();
+              },
+              icon: Icon(Icons.refresh),
+              label: Text("Reintentar"),
+            ),
+            SizedBox(width: 16),
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: EcoPalette.gray.color,
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+              ),
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              icon: Icon(Icons.arrow_back),
+              label: Text("Volver"),
+            ),
+          ],
+        ),
+      ],
+    );
   }
-  
-  String _getStateText() {
-    switch (_estado) {
-      case Estado.completado:
-        return "¡Reporte subido con éxito!";
-      case Estado.error:
-        return "Error al subir el reporte";
-      default:
-        return "Subiendo reporte...";
-    }
-  }
-  
-  String _getStateDescription() {
-    switch (_estado) {
-      case Estado.completado:
-        return "Tu reporte ha sido enviado correctamente y será revisado por nuestro equipo.";
-      case Estado.error:
-        return _errorMessage;
-      default:
-        return "Estamos procesando y subiendo tu reporte ambiental.";
-    }
-  }
-  
-  String _getStateTitle() {
-    switch (_estado) {
-      case Estado.completado:
-        return "Reporte completado";
-      case Estado.error:
-        return "Error en el reporte";
-      default:
-        return "Subiendo reporte";
-    }
-  }
-  
-  String _getStateButtonText() {
-    switch (_estado) {
-      case Estado.completado:
-        return "Continuar";
-      case Estado.error:
-        return "Volver";
-      default:
-        return "Cancelar";
-    }
-  }
-  
-  IconData _getStateIcon() {
-    switch (_estado) {
-      case Estado.completado:
-        return Icons.check_circle;
-      case Estado.error:
-        return Icons.arrow_back;
-      default:
-        return Icons.close;
-    }
+
+  Widget _buildCompletadoWidget(double screenWidth, double screenHeight) {
+    return Column(
+      children: [
+        Text(
+          "¡Reporte enviado!",
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: EcoPalette.success.color,
+          ),
+        ),
+        SizedBox(height: 16),
+        Text(
+          "Tu reporte ha sido enviado correctamente. Gracias por contribuir al cuidado del medio ambiente.",
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 16,
+            color: EcoPalette.gray.color,
+          ),
+        ),
+        SizedBox(height: 24),
+        ElevatedButton.icon(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: EcoPalette.greenPrimary.color,
+            foregroundColor: EcoPalette.white.color,
+            padding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(30),
+            ),
+          ),
+          onPressed: () {
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              '/home',
+              (route) => false,
+            );
+          },
+          icon: Icon(Icons.home),
+          label: Text("Volver al inicio"),
+        ),
+      ],
+    );
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:geoapptest/Provider/userProvider.dart';
 import 'package:geoapptest/Provider/usuarioProvider.dart';
 import 'package:geoapptest/Model/usuarioModel.dart';
+import 'package:geoapptest/Service/error_service.dart';
 import 'package:geoapptest/mocha.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -23,14 +24,26 @@ class _MiPerfilPageState extends State<MiPerfilPage> {
   }
   
   Future<void> _cargarDatosUsuario() async {
-    final usuarioProvider = Provider.of<UsuarioProvider>(context, listen: false);
-    if (usuarioProvider.usuarioActual == null) {
-      await usuarioProvider.inicializar();
-    }
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
+    try {
+      final usuarioProvider = Provider.of<UsuarioProvider>(context, listen: false);
+      if (usuarioProvider.usuarioActual == null) {
+        await usuarioProvider.inicializar();
+      }
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        ErrorService.mostrarSnackBarError(
+          context, 
+          ErrorService.obtenerMensajeError(e)
+        );
+      }
     }
   }
 
@@ -211,12 +224,20 @@ class _MiPerfilPageState extends State<MiPerfilPage> {
                                 ),
                               ),
                               onPressed: () async {
-                                await sessionProvider.salirSession();
-                                Navigator.pushNamedAndRemoveUntil(
-                                  context,
-                                  '/',
-                                  (route) => false,
-                                );
+                                try {
+                                  await sessionProvider.salirSession();
+                                  Navigator.pushNamedAndRemoveUntil(
+                                    context,
+                                    '/',
+                                    (route) => false,
+                                  );
+                                } catch (e) {
+                                  ErrorService.mostrarError(
+                                    context: context,
+                                    titulo: 'Error al cerrar sesión',
+                                    mensaje: ErrorService.obtenerMensajeError(e),
+                                  );
+                                }
                               },
                               child: const Row(
                                 children: [
@@ -580,12 +601,20 @@ class _TabCuenta extends StatelessWidget {
           icon: Icons.logout,
           color: EcoPalette.error.color,
           onTap: () async {
-            await Provider.of<SessionProvider>(context, listen: false).salirSession();
-            Navigator.pushNamedAndRemoveUntil(
-              context,
-              '/',
-              (route) => false,
-            );
+            try {
+              await Provider.of<SessionProvider>(context, listen: false).salirSession();
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/',
+                (route) => false,
+              );
+            } catch (e) {
+              ErrorService.mostrarError(
+                context: context,
+                titulo: 'Error al cerrar sesión',
+                mensaje: ErrorService.obtenerMensajeError(e),
+              );
+            }
           },
         ),
       ],
