@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:geoapptest/Provider/userProvider.dart';
 import 'package:geoapptest/mocha.dart';
+import 'package:provider/provider.dart';
 
 class MiPerfilPage extends StatelessWidget {
   const MiPerfilPage({super.key});
@@ -8,256 +10,278 @@ class MiPerfilPage extends StatelessWidget {
   Widget build(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width;
     double screenHeight = MediaQuery.of(context).size.height;
-    return Scaffold(
-      backgroundColor: EcoPalette.sand.color,
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            Container(
-              width: double.infinity,
-              padding: EdgeInsets.only(top: screenHeight * 0.07, bottom: screenHeight * 0.03),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    EcoPalette.greenPrimary.color,
-                    EcoPalette.greenDark.color,
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(32),
-                  bottomRight: Radius.circular(32),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: EcoPalette.black.color.withOpacity(0.1),
-                    blurRadius: 10,
-                    offset: Offset(0, 5),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: EcoPalette.white.color,
-                        width: 4,
+    
+    return Consumer<SessionProvider>(
+      builder: (context, sessionProvider, _) {
+        final user = sessionProvider.user;
+        final String userName = user?.email?.split('@').first ?? 'Usuario Anónimo';
+        final bool isAnonymous = user == null || user.email == null || user.email!.isEmpty;
+        
+        return Scaffold(
+          backgroundColor: EcoPalette.sand.color,
+          body: SingleChildScrollView(
+            child: Column(
+              children: [
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.only(top: screenHeight * 0.07, bottom: screenHeight * 0.03),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        EcoPalette.greenPrimary.color,
+                        EcoPalette.greenDark.color,
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(32),
+                      bottomRight: Radius.circular(32),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: EcoPalette.black.color.withOpacity(0.1),
+                        blurRadius: 10,
+                        offset: Offset(0, 5),
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: EcoPalette.black.color.withOpacity(0.2),
-                          blurRadius: 10,
-                          offset: Offset(0, 5),
-                        ),
-                      ],
-                    ),
-                    child: CircleAvatar(
-                      radius: screenWidth * 0.13,
-                      backgroundColor: EcoPalette.white.color,
-                      child: Icon(Icons.person, size: screenWidth * 0.13, color: EcoPalette.greenPrimary.color),
-                    ),
+                    ],
                   ),
-                  SizedBox(height: 12),
-                  Text(
-                    'Carlos Rodríguez',
-                    style: TextStyle(
-                      color: EcoPalette.white.color,
-                      fontWeight: FontWeight.bold,
-                      fontSize: screenWidth * 0.06,
-                      shadows: [
-                        Shadow(
-                          color: EcoPalette.black.color.withOpacity(0.3),
-                          blurRadius: 2,
-                          offset: Offset(0, 1),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Text(
-                    '🌎 Ciudad de México',
-                    style: TextStyle(
-                      color: EcoPalette.white.color.withOpacity(0.9),
-                      fontSize: screenWidth * 0.035,
-                    ),
-                  ),
-                  SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  child: Column(
                     children: [
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: EcoPalette.white.color,
-                          foregroundColor: EcoPalette.greenPrimary.color,
-                          elevation: 3,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
+                      Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: EcoPalette.white.color,
+                            width: 4,
                           ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: EcoPalette.black.color.withOpacity(0.2),
+                              blurRadius: 10,
+                              offset: Offset(0, 5),
+                            ),
+                          ],
                         ),
-                        onPressed: () {},
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 8),
-                          child: Text(
-                            'Editar perfil',
-                            style: TextStyle(fontWeight: FontWeight.bold),
+                        child: CircleAvatar(
+                          radius: screenWidth * 0.13,
+                          backgroundColor: EcoPalette.white.color,
+                          child: Icon(
+                            isAnonymous ? Icons.person_outline : Icons.person, 
+                            size: screenWidth * 0.13, 
+                            color: EcoPalette.greenPrimary.color
                           ),
                         ),
                       ),
-                      SizedBox(width: 10),
-                      OutlinedButton(
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: EcoPalette.white.color,
-                          side: BorderSide(color: EcoPalette.white.color),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
+                      SizedBox(height: 12),
+                      Text(
+                        userName,
+                        style: TextStyle(
+                          color: EcoPalette.white.color,
+                          fontWeight: FontWeight.bold,
+                          fontSize: screenWidth * 0.06,
+                          shadows: [
+                            Shadow(
+                              color: EcoPalette.black.color.withOpacity(0.3),
+                              blurRadius: 2,
+                              offset: Offset(0, 1),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (!isAnonymous) 
+                        Text(
+                          user!.email!,
+                          style: TextStyle(
+                            color: EcoPalette.white.color.withOpacity(0.9),
+                            fontSize: screenWidth * 0.035,
                           ),
                         ),
-                        onPressed: () {},
-                        child: Row(
+                      SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          if (!isAnonymous)
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: EcoPalette.white.color,
+                                foregroundColor: EcoPalette.greenPrimary.color,
+                                elevation: 3,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                              ),
+                              onPressed: () {},
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 8),
+                                child: Text(
+                                  'Editar perfil',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ),
+                          SizedBox(width: 10),
+                          OutlinedButton(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: EcoPalette.white.color,
+                              side: BorderSide(color: EcoPalette.white.color),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                            ),
+                            onPressed: () async {
+                              await sessionProvider.salirSession();
+                              Navigator.pushNamedAndRemoveUntil(
+                                context,
+                                '/',
+                                (route) => false,
+                              );
+                            },
+                            child: Row(
+                              children: [
+                                Icon(Icons.logout, size: 18),
+                                SizedBox(width: 4),
+                                Text('Cerrar sesión'),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: EdgeInsets.symmetric(vertical: 18, horizontal: 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _StatCard(title: 'Reportes', value: '47', icon: Icons.assignment, color: EcoPalette.greenPrimary.color),
+                      _StatCard(title: 'Zonas', value: '12', icon: Icons.place, color: EcoPalette.greenDark.color),
+                      _StatCard(title: 'Logros', value: '8', icon: Icons.emoji_events, color: EcoPalette.accent.color),
+                    ],
+                  ),
+                ),
+                Container(
+                  margin: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                  padding: EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: EcoPalette.white.color,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: EcoPalette.black.color.withOpacity(0.05),
+                        blurRadius: 5,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Nivel de impacto', 
+                        style: TextStyle(
+                          color: EcoPalette.greenDark.color, 
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        )
+                      ),
+                      SizedBox(height: 8),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: LinearProgressIndicator(
+                          value: 0.7,
+                          backgroundColor: EcoPalette.grayLight.color,
+                          color: EcoPalette.greenPrimary.color,
+                          minHeight: 8,
+                        ),
+                      ),
+                      SizedBox(height: 12),
+                      Text(
+                        'Próximo logro', 
+                        style: TextStyle(
+                          color: EcoPalette.brown.color,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 16,
+                        )
+                      ),
+                      SizedBox(height: 8),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: LinearProgressIndicator(
+                          value: 0.75,
+                          backgroundColor: EcoPalette.grayLight.color,
+                          color: EcoPalette.accent.color,
+                          minHeight: 8,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 18),
+                DefaultTabController(
+                  length: 3,
+                  child: Column(
+                    children: [
+                      Container(
+                        margin: EdgeInsets.symmetric(horizontal: 24),
+                        decoration: BoxDecoration(
+                          color: EcoPalette.white.color,
+                          borderRadius: BorderRadius.circular(25),
+                          boxShadow: [
+                            BoxShadow(
+                              color: EcoPalette.black.color.withOpacity(0.05),
+                              blurRadius: 5,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: TabBar(
+                          labelColor: EcoPalette.white.color,
+                          unselectedLabelColor: EcoPalette.gray.color,
+                          indicator: BoxDecoration(
+                            color: EcoPalette.greenPrimary.color,
+                            borderRadius: BorderRadius.circular(25),
+                          ),
+                          dividerColor: Colors.transparent,
+                          tabs: [
+                            Tab(text: 'Reportes'),
+                            Tab(text: 'Logros'),
+                            Tab(text: 'Cuenta'),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        height: screenHeight * 0.4,
+                        margin: EdgeInsets.only(top: 16),
+                        decoration: BoxDecoration(
+                          color: EcoPalette.white.color,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: EcoPalette.black.color.withOpacity(0.05),
+                              blurRadius: 5,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        child: TabBarView(
                           children: [
-                            Icon(Icons.share, size: 18),
-                            SizedBox(width: 4),
-                            Text('Compartir perfil'),
+                            _TabReportes(),
+                            _TabLogros(),
+                            _TabCuenta(),
                           ],
                         ),
                       ),
                     ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            Padding(
-              padding: EdgeInsets.symmetric(vertical: 18, horizontal: 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _StatCard(title: 'Reportes', value: '47', icon: Icons.assignment, color: EcoPalette.greenPrimary.color),
-                  _StatCard(title: 'Zonas', value: '12', icon: Icons.place, color: EcoPalette.greenDark.color),
-                  _StatCard(title: 'Logros', value: '8', icon: Icons.emoji_events, color: EcoPalette.accent.color),
-                ],
-              ),
-            ),
-            Container(
-              margin: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-              padding: EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: EcoPalette.white.color,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: EcoPalette.black.color.withOpacity(0.05),
-                    blurRadius: 5,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Nivel de impacto', 
-                    style: TextStyle(
-                      color: EcoPalette.greenDark.color, 
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    )
-                  ),
-                  SizedBox(height: 8),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: LinearProgressIndicator(
-                      value: 0.7,
-                      backgroundColor: EcoPalette.grayLight.color,
-                      color: EcoPalette.greenPrimary.color,
-                      minHeight: 8,
-                    ),
-                  ),
-                  SizedBox(height: 12),
-                  Text(
-                    'Próximo logro', 
-                    style: TextStyle(
-                      color: EcoPalette.brown.color,
-                      fontWeight: FontWeight.w500,
-                      fontSize: 16,
-                    )
-                  ),
-                  SizedBox(height: 8),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: LinearProgressIndicator(
-                      value: 0.75,
-                      backgroundColor: EcoPalette.grayLight.color,
-                      color: EcoPalette.accent.color,
-                      minHeight: 8,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(height: 18),
-            DefaultTabController(
-              length: 3,
-              child: Column(
-                children: [
-                  Container(
-                    margin: EdgeInsets.symmetric(horizontal: 24),
-                    decoration: BoxDecoration(
-                      color: EcoPalette.white.color,
-                      borderRadius: BorderRadius.circular(25),
-                      boxShadow: [
-                        BoxShadow(
-                          color: EcoPalette.black.color.withOpacity(0.05),
-                          blurRadius: 5,
-                          offset: Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: TabBar(
-                      labelColor: EcoPalette.white.color,
-                      unselectedLabelColor: EcoPalette.gray.color,
-                      indicator: BoxDecoration(
-                        color: EcoPalette.greenPrimary.color,
-                        borderRadius: BorderRadius.circular(25),
-                      ),
-                      dividerColor: Colors.transparent,
-                      tabs: [
-                        Tab(text: 'Reportes'),
-                        Tab(text: 'Logros'),
-                        Tab(text: 'Cuenta'),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    height: screenHeight * 0.4,
-                    margin: EdgeInsets.only(top: 16),
-                    decoration: BoxDecoration(
-                      color: EcoPalette.white.color,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: EcoPalette.black.color.withOpacity(0.05),
-                          blurRadius: 5,
-                          offset: Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    child: TabBarView(
-                      children: [
-                        _TabReportes(),
-                        _TabLogros(),
-                        _TabCuenta(),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }

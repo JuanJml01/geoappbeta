@@ -3,7 +3,7 @@
 // This file is generated from template in file `flutter_tools/lib/src/flutter_plugins.dart`.
 //
 
-// @dart = 3.7
+// @dart = 3.2
 
 import 'dart:io'; // flutter_ignore: dart_io_import.
 import 'package:geolocator_android/geolocator_android.dart';
@@ -24,6 +24,7 @@ import 'package:sqflite_darwin/sqflite_darwin.dart';
 import 'package:url_launcher_ios/url_launcher_ios.dart';
 import 'package:app_links_linux/app_links_linux.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:file_selector_linux/file_selector_linux.dart';
 import 'package:image_picker_linux/image_picker_linux.dart';
 import 'package:path_provider_linux/path_provider_linux.dart';
@@ -37,8 +38,8 @@ import 'package:path_provider_foundation/path_provider_foundation.dart';
 import 'package:shared_preferences_foundation/shared_preferences_foundation.dart';
 import 'package:sqflite_darwin/sqflite_darwin.dart';
 import 'package:url_launcher_macos/url_launcher_macos.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:file_selector_windows/file_selector_windows.dart';
-import 'package:flutter_secure_storage_windows/flutter_secure_storage_windows.dart';
 import 'package:image_picker_windows/image_picker_windows.dart';
 import 'package:path_provider_windows/path_provider_windows.dart';
 import 'package:shared_preferences_windows/shared_preferences_windows.dart';
@@ -215,6 +216,15 @@ class _PluginRegistrant {
       }
 
       try {
+        DeviceInfoPlusLinuxPlugin.registerWith();
+      } catch (err) {
+        print(
+          '`device_info_plus` threw an error: $err. '
+          'The app may not function as expected until you remove this plugin from pubspec.yaml'
+        );
+      }
+
+      try {
         FileSelectorLinux.registerWith();
       } catch (err) {
         print(
@@ -334,19 +344,19 @@ class _PluginRegistrant {
 
     } else if (Platform.isWindows) {
       try {
-        FileSelectorWindows.registerWith();
+        DeviceInfoPlusWindowsPlugin.registerWith();
       } catch (err) {
         print(
-          '`file_selector_windows` threw an error: $err. '
+          '`device_info_plus` threw an error: $err. '
           'The app may not function as expected until you remove this plugin from pubspec.yaml'
         );
       }
 
       try {
-        FlutterSecureStorageWindows.registerWith();
+        FileSelectorWindows.registerWith();
       } catch (err) {
         print(
-          '`flutter_secure_storage_windows` threw an error: $err. '
+          '`file_selector_windows` threw an error: $err. '
           'The app may not function as expected until you remove this plugin from pubspec.yaml'
         );
       }

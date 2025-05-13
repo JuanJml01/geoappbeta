@@ -118,8 +118,10 @@ class _SubiendoReporteState extends State<SubiendoReporte> with SingleTickerProv
       final providerR = context.read<Reporteprovider>();
       final providerU = context.read<SessionProvider>();
       
-      if (providerU.user?.email == null) {
-        throw Exception('No hay un usuario con sesión activa.');
+      // Verificar si hay un usuario con sesión activa
+      String email = "anonimo";
+      if (providerU.user != null && providerU.user?.email != null && providerU.user!.email!.isNotEmpty) {
+        email = providerU.user!.email!;
       }
       
       final fotoProvider = Provider.of<TomarFoto>(context, listen: false);
@@ -130,7 +132,7 @@ class _SubiendoReporteState extends State<SubiendoReporte> with SingleTickerProv
       final reporte = Reporte(
         descripcion: descripcion,
         imagen: fotoProvider.foto!.path,
-        email: providerU.user!.email!,
+        email: email,
         longitud: position.longitude,
         latitud: position.latitude,
         tipoTagIds: tipoTagIds,

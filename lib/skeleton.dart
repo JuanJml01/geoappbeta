@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:geoapptest/Pages/beta_config.dart';
 import 'package:geoapptest/Pages/beta_home.dart';
 import 'package:geoapptest/Pages/beta_subir_reporte.dart';
+import 'package:geoapptest/Provider/userProvider.dart';
 import 'package:geoapptest/mocha.dart';
 import 'package:geoapptest/Pages/todos_reportes.dart';
 import 'package:geoapptest/Pages/mi_perfil.dart';
+import 'package:provider/provider.dart';
 
 class Skeleton extends StatefulWidget {
   const Skeleton({super.key});
@@ -14,8 +16,25 @@ class Skeleton extends StatefulWidget {
 }
 
 class _SkeletonState extends State<Skeleton> {
-  int _selectedIndex = 0;
-  final PageController _pageController = PageController();
+  int _selectedIndex = 1;
+  final PageController _pageController = PageController(initialPage: 1);
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final sessionProvider = context.read<SessionProvider>();
+      if (sessionProvider.user == null) {
+        Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
 
   void _itemTap(int index) {
     setState(() {
@@ -53,10 +72,14 @@ class _SkeletonState extends State<Skeleton> {
               icon: Icon(Icons.person), label: "Perfil"),
         ]);
     return PopScope(
-      canPop: true,
-      onPopInvokedWithResult: (dipop, result) async {
-        if (dipop) {
-          //await context.read<SessionProvider>().SalirSession();
+      canPop: false,
+      onPopInvoked: (didPop) {
+        if (didPop) return;
+        
+        if (_selectedIndex == 1) {
+          Navigator.of(context).pop();
+        } else {
+          _itemTap(1);
         }
       },
       child: Scaffold(

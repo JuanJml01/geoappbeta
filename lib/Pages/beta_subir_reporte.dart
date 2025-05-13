@@ -29,24 +29,44 @@ class _SubirReporteState extends State<SubirReporte> {
 
   Future<void> _inicializarDato() async {
     if (!isInitialized) {
-      String email = context.read<SessionProvider>().user!.email ?? "";
-      if (email != "") {
-        await context
-            .read<Reporteprovider>()
-            .fetchReporteForEmail(nombre: email);
-      } else {
+      try {
+        final sessionProvider = context.read<SessionProvider>();
+        final user = sessionProvider.user;
+        
+        if (user != null && user.email != null && user.email!.isNotEmpty) {
+          // Usuario con email
+          String email = user.email!;
+          await context.read<Reporteprovider>().fetchReporteForEmail(nombre: email);
+          
+          if (mounted) {
+            setState(() {
+              isInitialized = true;
+              _tipoUser = TipoUser.email;
+            });
+          }
+        } else {
+          // Usuario anónimo o sin email
+          context.read<Reporteprovider>().reportes.clear();
+          
+          if (mounted) {
+            setState(() {
+              isInitialized = true;
+              _tipoUser = TipoUser.anonimo;
+            });
+          }
+        }
+      } catch (e) {
+        // En caso de error, establecer como usuario anónimo
         context.read<Reporteprovider>().reportes.clear();
-      }
-      if (mounted) {
-        setState(() {
-          if (email != "") {
-            isInitialized = true;
-            _tipoUser = TipoUser.email;
-          } else {
+        
+        if (mounted) {
+          setState(() {
             isInitialized = true;
             _tipoUser = TipoUser.anonimo;
-          }
-        });
+          });
+        }
+        
+        debugPrint('Error al inicializar datos: $e');
       }
     }
   }
