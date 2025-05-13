@@ -221,213 +221,281 @@ class _SubiendoReporteState extends State<SubiendoReporte> with SingleTickerProv
     double screenWidth = MediaQuery.of(context).size.width;
     double screenHeight = MediaQuery.of(context).size.height;
 
-    return Scaffold(
-      floatingActionButton: ElevatedButton.icon(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: _getStateColor(),
-          foregroundColor: EcoPalette.white.color,
-          elevation: 4,
-          padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(30),
-          ),
-        ),
-        onPressed: () {
-          if (_estado != Estado.iniciado) {
-            Navigator.pop(context);
-          } else {
-            // Si aún está en proceso, preguntar si quiere cancelar
-            showDialog(
-              context: context,
-              builder: (context) => AlertDialog(
-                backgroundColor: EcoPalette.white.color,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                title: Text(
-                  '¿Cancelar envío?',
-                  style: TextStyle(color: EcoPalette.greenDark.color, fontWeight: FontWeight.bold),
-                ),
-                content: Text(
-                  'El reporte aún se está subiendo. ¿Estás seguro que deseas cancelar?',
-                  style: TextStyle(color: EcoPalette.black.color),
-                ),
-                actions: [
-                  TextButton(
-                    child: Text(
-                      'Continuar subiendo',
-                      style: TextStyle(color: EcoPalette.greenPrimary.color),
-                    ),
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                  ),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: EcoPalette.error.color,
-                      foregroundColor: EcoPalette.white.color,
-                    ),
-                    child: Text('Cancelar envío'),
-                    onPressed: () {
-                      Navigator.pop(context); // Cerrar el diálogo
-                      Navigator.pop(context); // Volver a la pantalla anterior
-                    },
-                  ),
-                ],
+    return WillPopScope(
+      onWillPop: () async {
+        // Impedir que el usuario regrese mientras se está subiendo el reporte
+        if (_estado == Estado.iniciado) {
+          // Mostrar diálogo de confirmación
+          final bool salir = await showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => AlertDialog(
+              backgroundColor: EcoPalette.white.color,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: Text(
+                '¿Cancelar envío?',
+                style: TextStyle(color: EcoPalette.greenDark.color, fontWeight: FontWeight.bold),
               ),
-            );
-          }
-        },
-        icon: Icon(
-          _getStateIcon(),
-          size: 24,
-        ),
-        label: Text(
-          _getStateButtonText(),
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
+              content: Text(
+                'Si sales ahora, se perderá el reporte que estás subiendo.',
+                style: TextStyle(color: EcoPalette.black.color),
+              ),
+              actions: [
+                TextButton(
+                  child: Text(
+                    'Continuar subiendo',
+                    style: TextStyle(color: EcoPalette.greenPrimary.color),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(context, false);
+                  },
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: EcoPalette.error.color,
+                    foregroundColor: EcoPalette.white.color,
+                  ),
+                  child: Text('Cancelar envío'),
+                  onPressed: () {
+                    Navigator.pop(context, true);
+                  },
+                ),
+              ],
+            ),
+          );
+          return salir;
+        }
+        // Si el reporte ya se completó o hubo un error, permitir regresar
+        return true;
+      },
+      child: Scaffold(
+        floatingActionButton: ElevatedButton.icon(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: _getStateColor(),
+            foregroundColor: EcoPalette.white.color,
+            elevation: 4,
+            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(30),
+            ),
           ),
-        ),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      appBar: AppBar(
-        foregroundColor: EcoPalette.white.color,
-        backgroundColor: EcoPalette.greenPrimary.color,
-        elevation: 0,
-        title: Text(
-          _getStateTitle(),
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
-        ),
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back),
           onPressed: () {
-            showDialog(
-              context: context,
-              builder: (context) => AlertDialog(
-                backgroundColor: EcoPalette.white.color,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                title: Text(
-                  '¿Cancelar envío?',
-                  style: TextStyle(color: EcoPalette.greenDark.color, fontWeight: FontWeight.bold),
-                ),
-                content: Text(
-                  'Si sales ahora, se perderá el reporte que estás subiendo.',
-                  style: TextStyle(color: EcoPalette.black.color),
-                ),
-                actions: [
-                  TextButton(
-                    child: Text(
-                      'Continuar subiendo',
-                      style: TextStyle(color: EcoPalette.greenPrimary.color),
-                    ),
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
+            if (_estado != Estado.iniciado) {
+              // Si ya terminó (éxito o error), redirigir al Skeleton
+              Navigator.pushNamedAndRemoveUntil(
+                context, 
+                '/home',
+                (route) => false
+              );
+            } else {
+              // Si aún está en proceso, mostrar el diálogo de confirmación
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (context) => AlertDialog(
+                  backgroundColor: EcoPalette.white.color,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  title: Text(
+                    '¿Cancelar envío?',
+                    style: TextStyle(color: EcoPalette.greenDark.color, fontWeight: FontWeight.bold),
                   ),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: EcoPalette.error.color,
-                      foregroundColor: EcoPalette.white.color,
-                    ),
-                    child: Text('Cancelar envío'),
-                    onPressed: () {
-                      Navigator.pop(context);
-                      Navigator.pop(context);
-                    },
+                  content: Text(
+                    'Si sales ahora, se perderá el reporte que estás subiendo.',
+                    style: TextStyle(color: EcoPalette.black.color),
                   ),
-                ],
-              ),
-            );
-          },
-        ),
-      ),
-      body: Container(
-        decoration: BoxDecoration(
-          color: EcoPalette.sand.color,
-        ),
-        child: Center(
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Ícono animado según el estado
-                _buildStateIcon(),
-                    
-                SizedBox(height: 32),
-                
-                // Texto de estado
-                Text(
-                  _getStateText(),
-                  style: TextStyle(
-                    color: _getStateColor(),
-                    fontWeight: FontWeight.bold,
-                    fontSize: 22,
-                  ),
-                ),
-                
-                SizedBox(height: 16),
-                
-                // Descripción del estado
-                Text(
-                  _getStateDescription(),
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: EcoPalette.black.color,
-                    fontSize: 16,
-                  ),
-                ),
-                
-                // Advertencia de tiempo de espera
-                if (_isTimeoutWarningVisible && _estado == Estado.iniciado)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 16.0),
-                    child: Container(
-                      padding: EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: EcoPalette.warning.color.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(12),
+                  actions: [
+                    TextButton(
+                      child: Text(
+                        'Continuar subiendo',
+                        style: TextStyle(color: EcoPalette.greenPrimary.color),
                       ),
-                      child: Column(
-                        children: [
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.info_outline, color: EcoPalette.warning.color),
-                              SizedBox(width: 8),
-                              Text(
-                                "Está tardando más de lo esperado",
-                                style: TextStyle(
-                                  color: EcoPalette.warning.color,
-                                  fontWeight: FontWeight.bold,
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                    ),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: EcoPalette.error.color,
+                        foregroundColor: EcoPalette.white.color,
+                      ),
+                      child: Text('Cancelar envío'),
+                      onPressed: () {
+                        Navigator.pop(context);
+                        Navigator.pushNamedAndRemoveUntil(
+                          context,
+                          '/home',
+                          (route) => false
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              );
+            }
+          },
+          icon: Icon(
+            _getStateIcon(),
+            size: 24,
+          ),
+          label: Text(
+            _getStateButtonText(),
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+        appBar: AppBar(
+          foregroundColor: EcoPalette.white.color,
+          backgroundColor: EcoPalette.greenPrimary.color,
+          elevation: 0,
+          title: Text(
+            _getStateTitle(),
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
+          ),
+          automaticallyImplyLeading: false, // Ocultar botón de retroceso
+        ),
+        body: Container(
+          decoration: BoxDecoration(
+            color: EcoPalette.sand.color,
+          ),
+          child: Center(
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Ícono animado según el estado
+                  _buildStateIcon(),
+                      
+                  SizedBox(height: 32),
+                  
+                  // Texto de estado
+                  Text(
+                    _getStateText(),
+                    style: TextStyle(
+                      color: _getStateColor(),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 22,
+                    ),
+                  ),
+                  
+                  SizedBox(height: 16),
+                  
+                  // Descripción del estado
+                  Text(
+                    _getStateDescription(),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: EcoPalette.black.color,
+                      fontSize: 16,
+                    ),
+                  ),
+                  
+                  // Advertencia de tiempo de espera
+                  if (_isTimeoutWarningVisible && _estado == Estado.iniciado)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 16.0),
+                      child: Container(
+                        padding: EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: EcoPalette.warning.color.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          children: [
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.info_outline, color: EcoPalette.warning.color),
+                                SizedBox(width: 8),
+                                Text(
+                                  "Está tardando más de lo esperado",
+                                  style: TextStyle(
+                                    color: EcoPalette.warning.color,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 8),
-                          Text(
-                            "La subida puede tardar más tiempo dependiendo de tu conexión a internet.",
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: EcoPalette.black.color.withOpacity(0.7),
+                              ],
                             ),
+                            SizedBox(height: 8),
+                            Text(
+                              "La subida puede tardar más tiempo dependiendo de tu conexión a internet.",
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: EcoPalette.black.color.withOpacity(0.7),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  
+                  SizedBox(height: 32),
+                  
+                  // Tiempo transcurrido
+                  if (_estado == Estado.iniciado)
+                    Container(
+                      padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: EcoPalette.white.color,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: EcoPalette.black.color.withOpacity(0.1),
+                            blurRadius: 4,
+                            offset: Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.access_time,
+                            size: 16,
+                            color: EcoPalette.greenPrimary.color,
+                          ),
+                          SizedBox(width: 8),
+                          StreamBuilder<String>(
+                            stream: _timer(),
+                            builder: (context, snapshot) {
+                              if (snapshot.hasData) {
+                                return Text(
+                                  "Tiempo: ${snapshot.data}",
+                                  style: TextStyle(
+                                    color: EcoPalette.greenDark.color,
+                                    fontWeight: FontWeight.w500,
+                                    fontSize: 14,
+                                  ),
+                                );
+                              } else {
+                                return Text(
+                                  "Tiempo: 00:00:00",
+                                  style: TextStyle(
+                                    color: EcoPalette.greenDark.color,
+                                    fontWeight: FontWeight.w500,
+                                    fontSize: 14,
+                                  ),
+                                );
+                              }
+                            },
                           ),
                         ],
                       ),
                     ),
-                  ),
-                
-                SizedBox(height: 32),
-                
-                // Tiempo transcurrido
-                if (_estado == Estado.iniciado)
+                  
+                  SizedBox(height: 32),
+                  
+                  // Barra de progreso
                   Container(
-                    padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                    width: screenWidth * 0.8,
                     decoration: BoxDecoration(
-                      color: EcoPalette.white.color,
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(10),
                       boxShadow: [
                         BoxShadow(
                           color: EcoPalette.black.color.withOpacity(0.1),
@@ -436,111 +504,60 @@ class _SubiendoReporteState extends State<SubiendoReporte> with SingleTickerProv
                         ),
                       ],
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.access_time,
-                          size: 16,
-                          color: EcoPalette.greenPrimary.color,
-                        ),
-                        SizedBox(width: 8),
-                        StreamBuilder<String>(
-                          stream: _timer(),
-                          builder: (context, snapshot) {
-                            if (snapshot.hasData) {
-                              return Text(
-                                "Tiempo: ${snapshot.data}",
-                                style: TextStyle(
-                                  color: EcoPalette.greenDark.color,
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 14,
-                                ),
-                              );
-                            } else {
-                              return Text(
-                                "Tiempo: 00:00:00",
-                                style: TextStyle(
-                                  color: EcoPalette.greenDark.color,
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 14,
-                                ),
-                              );
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: StreamBuilder<double>(
+                        stream: _carga(),
+                        builder: (context, snapshot) {
+                          return LinearProgressIndicator(
+                            value: snapshot.data ?? 0.1,
+                            minHeight: 10,
+                            backgroundColor: EcoPalette.grayLight.color,
+                            valueColor: AlwaysStoppedAnimation<Color>(_getStateColor()),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                  
+                  // Botón para reintentar en caso de error
+                  if (_estado == Estado.error)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 24.0),
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          setState(() {
+                            _estado = Estado.iniciado;
+                            _isTimeoutWarningVisible = false;
+                            _errorMessage = "Ocurrió un error al subir el reporte.";
+                            x = 0;
+                            carga = 0.0;
+                          });
+                          
+                          // Reiniciar el timer
+                          _timeoutTimer?.cancel();
+                          _timeoutTimer = Timer(Duration(seconds: 15), () {
+                            if (mounted && _estado == Estado.iniciado) {
+                              setState(() {
+                                _isTimeoutWarningVisible = true;
+                              });
                             }
-                          },
+                          });
+                          
+                          // Reintentar
+                          _subirReporte();
+                        },
+                        icon: Icon(Icons.refresh),
+                        label: Text("Reintentar"),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: EcoPalette.info.color,
+                          foregroundColor: EcoPalette.white.color,
+                          padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                         ),
-                      ],
-                    ),
-                  ),
-                
-                SizedBox(height: 32),
-                
-                // Barra de progreso
-                Container(
-                  width: screenWidth * 0.8,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
-                    boxShadow: [
-                      BoxShadow(
-                        color: EcoPalette.black.color.withOpacity(0.1),
-                        blurRadius: 4,
-                        offset: Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: StreamBuilder<double>(
-                      stream: _carga(),
-                      builder: (context, snapshot) {
-                        return LinearProgressIndicator(
-                          value: snapshot.data ?? 0.1,
-                          minHeight: 10,
-                          backgroundColor: EcoPalette.grayLight.color,
-                          valueColor: AlwaysStoppedAnimation<Color>(_getStateColor()),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-                
-                // Botón para reintentar en caso de error
-                if (_estado == Estado.error)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 24.0),
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        setState(() {
-                          _estado = Estado.iniciado;
-                          _isTimeoutWarningVisible = false;
-                          _errorMessage = "Ocurrió un error al subir el reporte.";
-                          x = 0;
-                          carga = 0.0;
-                        });
-                        
-                        // Reiniciar el timer
-                        _timeoutTimer?.cancel();
-                        _timeoutTimer = Timer(Duration(seconds: 15), () {
-                          if (mounted && _estado == Estado.iniciado) {
-                            setState(() {
-                              _isTimeoutWarningVisible = true;
-                            });
-                          }
-                        });
-                        
-                        // Reintentar
-                        _subirReporte();
-                      },
-                      icon: Icon(Icons.refresh),
-                      label: Text("Reintentar"),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: EcoPalette.info.color,
-                        foregroundColor: EcoPalette.white.color,
-                        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                       ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

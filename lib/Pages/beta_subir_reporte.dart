@@ -375,9 +375,11 @@ class BotonSubirReporte extends StatelessWidget {
           _selectedUbicacionTags.clear();
           _selectedUbicacionTags.add('otro');
           
-          await _pedirDetallesReporte(context);
+          // Mostrar el diálogo de detalles y esperar la respuesta
+          final bool continuarProceso = await _pedirDetallesReporte(context);
           
-          if (_controllerText.text.isNotEmpty) {
+          if (continuarProceso && _controllerText.text.isNotEmpty) {
+            // Mostrar indicador de carga
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Row(
@@ -395,18 +397,31 @@ class BotonSubirReporte extends StatelessWidget {
               ),
             );
             
-            await provider.scanearFoto(foto: provider.foto!);
-            
-            // Pasar los tags seleccionados junto con la descripción
-            Navigator.pushNamed(
-              context, 
-              '/subiendo',
-              arguments: {
-                'descripcion': _controllerText.text,
-                'tipoTags': _selectedTipoTags,
-                'ubicacionTags': _selectedUbicacionTags,
-              },
-            );
+            try {
+              // Escanear la foto
+              await provider.scanearFoto(foto: provider.foto!);
+              
+              // Navegar a la pantalla de carga y prevenir retorno
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/subiendo',
+                (route) => false, // Esto impide volver atrás
+                arguments: {
+                  'descripcion': _controllerText.text,
+                  'tipoTags': _selectedTipoTags,
+                  'ubicacionTags': _selectedUbicacionTags,
+                },
+              );
+            } catch (e) {
+              // Mostrar error si falla el procesamiento
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Error al procesar la imagen: ${e.toString()}'),
+                  backgroundColor: EcoPalette.error.color,
+                  duration: Duration(seconds: 3),
+                ),
+              );
+            }
           }
         }
       },
@@ -424,330 +439,340 @@ class BotonSubirReporte extends StatelessWidget {
     );
   }
 
-  Future<void> _pedirDetallesReporte(BuildContext context) async {
-    return await showDialog(
+  Future<bool> _pedirDetallesReporte(BuildContext context) async {
+    bool continuarProceso = false;
+    
+    await showDialog(
       context: context,
+      barrierDismissible: false, // Evitar cerrar el diálogo tocando fuera
       builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setStateDialog) {
-            return Dialog(
-              backgroundColor: EcoPalette.white.color,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Container(
-                width: screenWidth * 0.9,
-                constraints: BoxConstraints(maxHeight: screenHeight * 0.8),
-                child: SingleChildScrollView(
-                  child: Padding(
-                    padding: EdgeInsets.all(20),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(Icons.description, color: EcoPalette.greenPrimary.color),
-                            SizedBox(width: 8),
-                            Text(
-                              'Detalles del reporte',
-                              style: TextStyle(
-                                color: EcoPalette.greenDark.color,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 18,
+        return WillPopScope(
+          onWillPop: () async => false, // Prevenir cierre con botón atrás
+          child: StatefulBuilder(
+            builder: (context, setStateDialog) {
+              return Dialog(
+                backgroundColor: EcoPalette.white.color,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Container(
+                  width: screenWidth * 0.9,
+                  constraints: BoxConstraints(maxHeight: screenHeight * 0.8),
+                  child: SingleChildScrollView(
+                    child: Padding(
+                      padding: EdgeInsets.all(20),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.description, color: EcoPalette.greenPrimary.color),
+                              SizedBox(width: 8),
+                              Text(
+                                'Detalles del reporte',
+                                style: TextStyle(
+                                  color: EcoPalette.greenDark.color,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18,
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 20),
-                        
-                        // Selección de Tipo de Problema (tags múltiples)
-                        Text(
-                          'Tipo de problema',
-                          style: TextStyle(
-                            color: EcoPalette.greenDark.color,
-                            fontWeight: FontWeight.w500,
-                            fontSize: 16,
+                            ],
                           ),
-                        ),
-                        SizedBox(height: 8),
-                        Container(
-                          padding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: EcoPalette.greenLight.color),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: tiposReporteTags.map((tag) {
-                              final isSelected = _selectedTipoTags.contains(tag.id);
-                              return FilterChip(
-                                label: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      tag.icono,
-                                      size: 16,
-                                      color: isSelected 
-                                          ? EcoPalette.white.color 
-                                          : EcoPalette.greenDark.color,
-                                    ),
-                                    SizedBox(width: 4),
-                                    Text(tag.nombre),
-                                  ],
-                                ),
-                                selected: isSelected,
-                                onSelected: (selected) {
-                                  setStateDialog(() {
-                                    if (selected) {
-                                      // Si se selecciona 'Otro', deseleccionar los demás
-                                      if (tag.id == 'otro') {
-                                        _selectedTipoTags.clear();
-                                        _selectedTipoTags.add('otro');
-                                      } else {
-                                        // Si se selecciona otro tag, remover 'Otro'
-                                        _selectedTipoTags.remove('otro');
-                                        _selectedTipoTags.add(tag.id);
-                                      }
-                                    } else {
-                                      // No permitir deseleccionar todos los tags
-                                      if (_selectedTipoTags.length > 1) {
-                                        _selectedTipoTags.remove(tag.id);
-                                      }
-                                      
-                                      // Si no hay selecciones, añadir 'Otro'
-                                      if (_selectedTipoTags.isEmpty) {
-                                        _selectedTipoTags.add('otro');
-                                      }
-                                    }
-                                  });
-                                },
-                                backgroundColor: EcoPalette.white.color,
-                                selectedColor: EcoPalette.greenPrimary.color,
-                                checkmarkColor: EcoPalette.white.color,
-                                labelStyle: TextStyle(
-                                  color: isSelected 
-                                      ? EcoPalette.white.color 
-                                      : EcoPalette.greenDark.color,
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                        ),
-                        
-                        SizedBox(height: 16),
-                        
-                        // Selección de Ubicación (tags múltiples)
-                        Text(
-                          'Tipo de ubicación',
-                          style: TextStyle(
-                            color: EcoPalette.greenDark.color,
-                            fontWeight: FontWeight.w500,
-                            fontSize: 16,
-                          ),
-                        ),
-                        SizedBox(height: 8),
-                        Container(
-                          padding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: EcoPalette.greenLight.color),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: ubicacionTags.map((tag) {
-                              final isSelected = _selectedUbicacionTags.contains(tag.id);
-                              return FilterChip(
-                                label: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      tag.icono,
-                                      size: 16,
-                                      color: isSelected 
-                                          ? EcoPalette.white.color 
-                                          : EcoPalette.greenDark.color,
-                                    ),
-                                    SizedBox(width: 4),
-                                    Text(tag.nombre),
-                                  ],
-                                ),
-                                selected: isSelected,
-                                onSelected: (selected) {
-                                  setStateDialog(() {
-                                    if (selected) {
-                                      // Si se selecciona 'Otro', deseleccionar los demás
-                                      if (tag.id == 'otro') {
-                                        _selectedUbicacionTags.clear();
-                                        _selectedUbicacionTags.add('otro');
-                                      } else {
-                                        // Si se selecciona otro tag, remover 'Otro'
-                                        _selectedUbicacionTags.remove('otro');
-                                        _selectedUbicacionTags.add(tag.id);
-                                      }
-                                    } else {
-                                      // No permitir deseleccionar todos los tags
-                                      if (_selectedUbicacionTags.length > 1) {
-                                        _selectedUbicacionTags.remove(tag.id);
-                                      }
-                                      
-                                      // Si no hay selecciones, añadir 'Otro'
-                                      if (_selectedUbicacionTags.isEmpty) {
-                                        _selectedUbicacionTags.add('otro');
-                                      }
-                                    }
-                                  });
-                                },
-                                backgroundColor: EcoPalette.white.color,
-                                selectedColor: EcoPalette.greenPrimary.color,
-                                checkmarkColor: EcoPalette.white.color,
-                                labelStyle: TextStyle(
-                                  color: isSelected 
-                                      ? EcoPalette.white.color 
-                                      : EcoPalette.greenDark.color,
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                        ),
-                        
-                        SizedBox(height: 16),
-                        
-                        // Descripción
-                        Text(
-                          'Descripción del reporte',
-                          style: TextStyle(
-                            color: EcoPalette.greenDark.color,
-                            fontWeight: FontWeight.w500,
-                            fontSize: 16,
-                          ),
-                        ),
-                        SizedBox(height: 8),
-                        TextField(
-                          controller: _controllerText,
-                          cursorColor: EcoPalette.greenPrimary.color,
-                          maxLines: 4,
-                          decoration: InputDecoration(
-                            hintText: 'Describe el problema ambiental...',
-                            hintStyle: TextStyle(
-                              color: EcoPalette.gray.color.withOpacity(0.5),
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide(color: EcoPalette.greenLight.color),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide(color: EcoPalette.greenPrimary.color, width: 2),
+                          SizedBox(height: 20),
+                          
+                          // Selección de Tipo de Problema (tags múltiples)
+                          Text(
+                            'Tipo de problema',
+                            style: TextStyle(
+                              color: EcoPalette.greenDark.color,
+                              fontWeight: FontWeight.w500,
+                              fontSize: 16,
                             ),
                           ),
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: EcoPalette.black.color,
-                          ),
-                        ),
-                        
-                        SizedBox(height: 24),
-                        
-                        // Resumen de selecciones
-                        if (_selectedTipoTags.isNotEmpty || _selectedUbicacionTags.isNotEmpty)
+                          SizedBox(height: 8),
                           Container(
-                            padding: EdgeInsets.all(12),
+                            padding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                             decoration: BoxDecoration(
-                              color: EcoPalette.greenLight.color.withOpacity(0.2),
+                              border: Border.all(color: EcoPalette.greenLight.color),
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Resumen:',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: EcoPalette.greenDark.color,
+                            child: Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: tiposReporteTags.map((tag) {
+                                final isSelected = _selectedTipoTags.contains(tag.id);
+                                return FilterChip(
+                                  label: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        tag.icono,
+                                        size: 16,
+                                        color: isSelected 
+                                            ? EcoPalette.white.color 
+                                            : EcoPalette.greenDark.color,
+                                      ),
+                                      SizedBox(width: 4),
+                                      Text(tag.nombre),
+                                    ],
                                   ),
-                                ),
-                                SizedBox(height: 8),
-                                if (_selectedTipoTags.isNotEmpty)
-                                  Wrap(
-                                    spacing: 4,
-                                    runSpacing: 4,
-                                    children: _selectedTipoTags.map((id) {
-                                      final tag = getTipoReporteTagById(id);
-                                      return Chip(
-                                        label: Text(tag.nombre),
-                                        avatar: Icon(tag.icono, size: 16),
-                                        backgroundColor: EcoPalette.greenPrimary.color.withOpacity(0.1),
-                                        labelStyle: TextStyle(color: EcoPalette.greenDark.color, fontSize: 12),
-                                      );
-                                    }).toList(),
+                                  selected: isSelected,
+                                  onSelected: (selected) {
+                                    setStateDialog(() {
+                                      if (selected) {
+                                        // Si se selecciona 'Otro', deseleccionar los demás
+                                        if (tag.id == 'otro') {
+                                          _selectedTipoTags.clear();
+                                          _selectedTipoTags.add('otro');
+                                        } else {
+                                          // Si se selecciona otro tag, remover 'Otro'
+                                          _selectedTipoTags.remove('otro');
+                                          _selectedTipoTags.add(tag.id);
+                                        }
+                                      } else {
+                                        // No permitir deseleccionar todos los tags
+                                        if (_selectedTipoTags.length > 1) {
+                                          _selectedTipoTags.remove(tag.id);
+                                        }
+                                        
+                                        // Si no hay selecciones, añadir 'Otro'
+                                        if (_selectedTipoTags.isEmpty) {
+                                          _selectedTipoTags.add('otro');
+                                        }
+                                      }
+                                    });
+                                  },
+                                  backgroundColor: EcoPalette.white.color,
+                                  selectedColor: EcoPalette.greenPrimary.color,
+                                  checkmarkColor: EcoPalette.white.color,
+                                  labelStyle: TextStyle(
+                                    color: isSelected 
+                                        ? EcoPalette.white.color 
+                                        : EcoPalette.greenDark.color,
                                   ),
-                                if (_selectedUbicacionTags.isNotEmpty)
-                                  Wrap(
-                                    spacing: 4,
-                                    runSpacing: 4,
-                                    children: _selectedUbicacionTags.map((id) {
-                                      final tag = getUbicacionTagById(id);
-                                      return Chip(
-                                        label: Text(tag.nombre),
-                                        avatar: Icon(tag.icono, size: 16),
-                                        backgroundColor: EcoPalette.accent.color.withOpacity(0.1),
-                                        labelStyle: TextStyle(color: EcoPalette.greenDark.color, fontSize: 12),
-                                      );
-                                    }).toList(),
-                                  ),
-                              ],
+                                );
+                              }).toList(),
                             ),
                           ),
-                        
-                        SizedBox(height: 24),
-                        
-                        // Botones
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            TextButton(
-                              onPressed: () {
-                                Navigator.pop(context);
-                              },
-                              style: TextButton.styleFrom(
-                                foregroundColor: EcoPalette.gray.color,
-                              ),
-                              child: Text('Cancelar'),
+                          
+                          SizedBox(height: 16),
+                          
+                          // Selección de Ubicación (tags múltiples)
+                          Text(
+                            'Tipo de ubicación',
+                            style: TextStyle(
+                              color: EcoPalette.greenDark.color,
+                              fontWeight: FontWeight.w500,
+                              fontSize: 16,
                             ),
-                            SizedBox(width: 8),
-                            ElevatedButton(
-                              onPressed: () {
-                                if (_controllerText.text.isNotEmpty) {
-                                  Navigator.pop(context);
-                                } else {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('Por favor, ingresa una descripción'),
-                                      backgroundColor: EcoPalette.error.color,
+                          ),
+                          SizedBox(height: 8),
+                          Container(
+                            padding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: EcoPalette.greenLight.color),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: ubicacionTags.map((tag) {
+                                final isSelected = _selectedUbicacionTags.contains(tag.id);
+                                return FilterChip(
+                                  label: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        tag.icono,
+                                        size: 16,
+                                        color: isSelected 
+                                            ? EcoPalette.white.color 
+                                            : EcoPalette.greenDark.color,
+                                      ),
+                                      SizedBox(width: 4),
+                                      Text(tag.nombre),
+                                    ],
+                                  ),
+                                  selected: isSelected,
+                                  onSelected: (selected) {
+                                    setStateDialog(() {
+                                      if (selected) {
+                                        // Si se selecciona 'Otro', deseleccionar los demás
+                                        if (tag.id == 'otro') {
+                                          _selectedUbicacionTags.clear();
+                                          _selectedUbicacionTags.add('otro');
+                                        } else {
+                                          // Si se selecciona otro tag, remover 'Otro'
+                                          _selectedUbicacionTags.remove('otro');
+                                          _selectedUbicacionTags.add(tag.id);
+                                        }
+                                      } else {
+                                        // No permitir deseleccionar todos los tags
+                                        if (_selectedUbicacionTags.length > 1) {
+                                          _selectedUbicacionTags.remove(tag.id);
+                                        }
+                                        
+                                        // Si no hay selecciones, añadir 'Otro'
+                                        if (_selectedUbicacionTags.isEmpty) {
+                                          _selectedUbicacionTags.add('otro');
+                                        }
+                                      }
+                                    });
+                                  },
+                                  backgroundColor: EcoPalette.white.color,
+                                  selectedColor: EcoPalette.greenPrimary.color,
+                                  checkmarkColor: EcoPalette.white.color,
+                                  labelStyle: TextStyle(
+                                    color: isSelected 
+                                        ? EcoPalette.white.color 
+                                        : EcoPalette.greenDark.color,
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ),
+                          
+                          SizedBox(height: 16),
+                          
+                          // Descripción
+                          Text(
+                            'Descripción del reporte',
+                            style: TextStyle(
+                              color: EcoPalette.greenDark.color,
+                              fontWeight: FontWeight.w500,
+                              fontSize: 16,
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          TextField(
+                            controller: _controllerText,
+                            cursorColor: EcoPalette.greenPrimary.color,
+                            maxLines: 4,
+                            decoration: InputDecoration(
+                              hintText: 'Describe el problema ambiental...',
+                              hintStyle: TextStyle(
+                                color: EcoPalette.gray.color.withOpacity(0.5),
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: BorderSide(color: EcoPalette.greenLight.color),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: BorderSide(color: EcoPalette.greenPrimary.color, width: 2),
+                              ),
+                            ),
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: EcoPalette.black.color,
+                            ),
+                          ),
+                          
+                          SizedBox(height: 24),
+                          
+                          // Resumen de selecciones
+                          if (_selectedTipoTags.isNotEmpty || _selectedUbicacionTags.isNotEmpty)
+                            Container(
+                              padding: EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: EcoPalette.greenLight.color.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Resumen:',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: EcoPalette.greenDark.color,
                                     ),
-                                  );
-                                }
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: EcoPalette.greenPrimary.color,
-                                foregroundColor: EcoPalette.white.color,
+                                  ),
+                                  SizedBox(height: 8),
+                                  if (_selectedTipoTags.isNotEmpty)
+                                    Wrap(
+                                      spacing: 4,
+                                      runSpacing: 4,
+                                      children: _selectedTipoTags.map((id) {
+                                        final tag = getTipoReporteTagById(id);
+                                        return Chip(
+                                          label: Text(tag.nombre),
+                                          avatar: Icon(tag.icono, size: 16),
+                                          backgroundColor: EcoPalette.greenPrimary.color.withOpacity(0.1),
+                                          labelStyle: TextStyle(color: EcoPalette.greenDark.color, fontSize: 12),
+                                        );
+                                      }).toList(),
+                                    ),
+                                  if (_selectedUbicacionTags.isNotEmpty)
+                                    Wrap(
+                                      spacing: 4,
+                                      runSpacing: 4,
+                                      children: _selectedUbicacionTags.map((id) {
+                                        final tag = getUbicacionTagById(id);
+                                        return Chip(
+                                          label: Text(tag.nombre),
+                                          avatar: Icon(tag.icono, size: 16),
+                                          backgroundColor: EcoPalette.accent.color.withOpacity(0.1),
+                                          labelStyle: TextStyle(color: EcoPalette.greenDark.color, fontSize: 12),
+                                        );
+                                      }).toList(),
+                                    ),
+                                ],
                               ),
-                              child: Text('Continuar'),
                             ),
-                          ],
-                        ),
-                      ],
+                          
+                          SizedBox(height: 24),
+                          
+                          // Botones
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              TextButton(
+                                onPressed: () {
+                                  continuarProceso = false;
+                                  Navigator.pop(context);
+                                },
+                                style: TextButton.styleFrom(
+                                  foregroundColor: EcoPalette.gray.color,
+                                ),
+                                child: Text('Cancelar'),
+                              ),
+                              SizedBox(width: 8),
+                              ElevatedButton(
+                                onPressed: () {
+                                  if (_controllerText.text.isNotEmpty) {
+                                    continuarProceso = true;
+                                    Navigator.pop(context);
+                                  } else {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Por favor, ingresa una descripción'),
+                                        backgroundColor: EcoPalette.error.color,
+                                      ),
+                                    );
+                                  }
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: EcoPalette.greenPrimary.color,
+                                  foregroundColor: EcoPalette.white.color,
+                                ),
+                                child: Text('Continuar'),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         );
       },
     );
+    
+    return continuarProceso;
   }
 }
