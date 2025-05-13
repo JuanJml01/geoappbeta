@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:geoapptest/Provider/userProvider.dart';
+import 'package:geoapptest/Provider/usuarioProvider.dart';
 import 'package:provider/provider.dart';
 import 'package:geoapptest/mocha.dart';
 
@@ -152,16 +153,44 @@ class BotonLoginAno extends StatelessWidget {
             minimumSize: Size(screenWidth * 0.62, screenHeight * 0.055)),
         onPressed: () async {
           try {
+            // Mostrar indicador de carga
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (context) => Center(
+                child: CircularProgressIndicator(
+                  color: EcoPalette.white.color,
+                ),
+              ),
+            );
+            
             await context.read<SessionProvider>().iniciarAnonimo();
             if (context.read<SessionProvider>().user == null) {
               throw Exception("Error al iniciar sesion anonima");
             } else {
-              Navigator.pushNamed(context, "/home");
+              // Inicializar el perfil de usuario
+              final usuarioProvider = context.read<UsuarioProvider>();
+              await usuarioProvider.inicializar();
+              
+              // Cerrar el diálogo de carga
+              Navigator.pop(context);
+              
+              // Navegar a la pantalla principal
+              Navigator.pushNamedAndRemoveUntil(
+                context, 
+                "/home", 
+                (route) => false
+              );
             }
           } catch (e) {
+            // Cerrar el diálogo de carga si está visible
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            }
+            
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text("Error al iniciar sesión anónima"),
+                content: Text("Error al iniciar sesión anónima: ${e.toString()}"),
                 backgroundColor: EcoPalette.error.color,
               ),
             );
@@ -198,8 +227,8 @@ class BotonLoginGoogle extends StatelessWidget {
   Widget build(BuildContext context) {
     return ElevatedButton(
         style: ElevatedButton.styleFrom(
-            backgroundColor: EcoPalette.accent.color,
-            foregroundColor: EcoPalette.white.color,
+            backgroundColor: EcoPalette.white.color,
+            foregroundColor: Colors.black87,
             elevation: 2,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10.0),
@@ -207,16 +236,44 @@ class BotonLoginGoogle extends StatelessWidget {
             minimumSize: Size(screenWidth * 0.62, screenHeight * 0.055)),
         onPressed: () async {
           try {
+            // Mostrar indicador de carga
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (context) => Center(
+                child: CircularProgressIndicator(
+                  color: EcoPalette.white.color,
+                ),
+              ),
+            );
+            
             await context.read<SessionProvider>().iniciarGoogle();
             if (context.read<SessionProvider>().user == null) {
-              throw Exception("Error al iniciar sesion con google");
+              throw Exception("Error al iniciar sesión con Google");
             } else {
-              Navigator.pushNamed(context, "/home");
+              // Inicializar el perfil de usuario
+              final usuarioProvider = context.read<UsuarioProvider>();
+              await usuarioProvider.inicializar();
+              
+              // Cerrar el diálogo de carga
+              Navigator.pop(context);
+              
+              // Navegar a la pantalla principal
+              Navigator.pushNamedAndRemoveUntil(
+                context, 
+                "/home", 
+                (route) => false
+              );
             }
           } catch (e) {
+            // Cerrar el diálogo de carga si está visible
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            }
+            
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text("Error al iniciar sesión con Google"),
+                content: Text("Error al iniciar sesión con Google: ${e.toString()}"),
                 backgroundColor: EcoPalette.error.color,
               ),
             );
@@ -225,7 +282,10 @@ class BotonLoginGoogle extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.login),
+            Image.network(
+              "https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg",
+              height: screenHeight * 0.03,
+            ),
             SizedBox(width: 8),
             Text(
               "Iniciar con Google",

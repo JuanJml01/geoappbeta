@@ -6,6 +6,7 @@ import 'package:geoapptest/Pages/beta_ver_reporte.dart';
 import 'package:geoapptest/Pages/todos_reportes.dart';
 import 'package:geoapptest/Provider/reporteProvider.dart';
 import 'package:geoapptest/Provider/userProvider.dart';
+import 'package:geoapptest/Provider/usuarioProvider.dart';
 import 'package:geoapptest/Service/tomarFoto.dart';
 import 'package:geoapptest/mocha.dart';
 import 'package:geoapptest/skeleton.dart';
@@ -41,6 +42,7 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (context) => SessionProvider()),
         ChangeNotifierProvider(create: (context) => Reporteprovider()),
+        ChangeNotifierProvider(create: (context) => UsuarioProvider()),
         Provider(create: (context) => TomarFoto()),
       ],
       child: MaterialApp(
