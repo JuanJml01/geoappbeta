@@ -10,39 +10,58 @@ class LoggerService {
 
   final _supabase = Supabase.instance.client;
 
+  // Niveles de log
+  static const int DEBUG = 0;
+  static const int INFO = 1;
+  static const int WARNING = 2;
+  static const int ERROR = 3;
+  
+  // Nivel actual (configurable)
+  static int _currentLevel = DEBUG;
+  
+  // Cambiar el nivel de registro
+  static void setLevel(int level) {
+    _currentLevel = level;
+  }
+
   /// Registro de información normal
   static void log(String message) {
-    if (kDebugMode) {
-      print(message);
+    if (_currentLevel <= INFO) {
+      print('ℹ️ INFO: $message');
     }
   }
 
   /// Registro de información de depuración
   static void debug(String message) {
-    if (kDebugMode) {
+    if (_currentLevel <= DEBUG) {
       print('🔍 DEBUG: $message');
     }
   }
 
   /// Registro de advertencias
   static void warning(String message) {
-    if (kDebugMode) {
-      print('⚠️ ADVERTENCIA: $message');
+    if (_currentLevel <= WARNING) {
+      print('⚠️ WARN: $message');
     }
   }
 
   /// Registro de errores
   static void error(String message) {
-    if (kDebugMode) {
+    if (_currentLevel <= ERROR) {
       print('❌ ERROR: $message');
     }
   }
 
   /// Registro de información importante
   static void info(String message) {
-    if (kDebugMode) {
+    if (_currentLevel <= INFO) {
       print('ℹ️ INFO: $message');
     }
+  }
+
+  /// Registro de mensajes de autenticación
+  static void auth(String message) {
+    print('🔐 AUTH: $message');
   }
 
   void _printLog(String type, String message, {Map<String, dynamic>? data}) {

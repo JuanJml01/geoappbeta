@@ -3,13 +3,64 @@
 import 'package:flutter/material.dart';
 import 'package:geoapptest/Provider/userProvider.dart';
 import 'package:geoapptest/Provider/usuarioProvider.dart';
+import 'package:geoapptest/Service/config_service.dart';
 import 'package:geoapptest/Service/error_service.dart';
+import 'package:geoapptest/Service/logger_service.dart';
 import 'package:geoapptest/Widgets/loading_dialog.dart';
 import 'package:provider/provider.dart';
 import 'package:geoapptest/mocha.dart';
 
-class Login extends StatelessWidget {
+class Login extends StatefulWidget {
   const Login({super.key});
+
+  @override
+  State<Login> createState() => _LoginState();
+}
+
+class _LoginState extends State<Login> {
+  bool _configuracionVerificada = false;
+  bool _configuracionValida = true;
+  String? _mensajeError;
+
+  @override
+  void initState() {
+    super.initState();
+    _verificarConfiguracion();
+  }
+
+  Future<void> _verificarConfiguracion() async {
+    try {
+      LoggerService.log('Verificando configuración de la aplicación...');
+      
+      // Verificar variables de entorno
+      final variablesValidas = await ConfigService.verificarVariablesEntorno();
+      
+      // Verificar conexión con Supabase
+      final conexionValida = await ConfigService.verificarConexionSupabase();
+      
+      // Verificar configuración de Google Auth
+      final googleAuthValido = await ConfigService.verificarConfiguracionGoogleAuth();
+      
+      setState(() {
+        _configuracionVerificada = true;
+        _configuracionValida = variablesValidas && conexionValida && googleAuthValido;
+        
+        if (!_configuracionValida) {
+          _mensajeError = 'Error de configuración: ';
+          if (!variablesValidas) _mensajeError = _mensajeError! + 'Variables de entorno incorrectas. ';
+          if (!conexionValida) _mensajeError = _mensajeError! + 'No se pudo conectar con Supabase. ';
+          if (!googleAuthValido) _mensajeError = _mensajeError! + 'Configuración de Google Auth incorrecta. ';
+        }
+      });
+    } catch (e) {
+      setState(() {
+        _configuracionVerificada = true;
+        _configuracionValida = false;
+        _mensajeError = 'Error al verificar la configuración: $e';
+      });
+      LoggerService.error('Error al verificar la configuración: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -76,9 +127,37 @@ class Login extends StatelessWidget {
                         ),
                       ),
                       SizedBox(height: screenHeight * 0.04),
-                      BotonLoginGoogle(screenWidth: screenWidth, screenHeight: screenHeight),
-                      SizedBox(height: screenHeight * 0.02),
-                      BotonLoginAno(screenWidth: screenWidth, screenHeight: screenHeight),
+                      if (!_configuracionVerificada)
+                        CircularProgressIndicator(
+                          color: EcoPalette.greenPrimary.color,
+                        )
+                      else if (!_configuracionValida)
+                        Column(
+                          children: [
+                            Icon(
+                              Icons.error_outline,
+                              color: Colors.red,
+                              size: 40,
+                            ),
+                            SizedBox(height: 10),
+                            Text(
+                              _mensajeError ?? 'Error de configuración',
+                              style: TextStyle(
+                                color: Colors.red,
+                                fontSize: 14,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        )
+                      else
+                        Column(
+                          children: [
+                            BotonLoginGoogle(screenWidth: screenWidth, screenHeight: screenHeight),
+                            SizedBox(height: screenHeight * 0.02),
+                            BotonLoginAno(screenWidth: screenWidth, screenHeight: screenHeight),
+                          ],
+                        ),
                     ],
                   ),
                 ),
@@ -158,18 +237,30 @@ class BotonLoginAno extends StatelessWidget {
             // Mostrar diálogo de carga
             LoadingDialog.show(context, mensaje: 'Iniciando sesión...');
             
-            await context.read<SessionProvider>().iniciarAnonimo();
-            if (context.read<SessionProvider>().user == null) {
-              throw Exception("Error al iniciar sesion anonima");
+            LoggerService.auth('Botón de inicio anónimo presionado');
+            final sessionProvider = context.read<SessionProvider>();
+            
+            // Intentar iniciar sesión anónima
+            await sessionProvider.iniciarAnonimo();
+            
+            // Verificar si el usuario fue creado correctamente
+            if (sessionProvider.user == null) {
+              LoggerService.error('Error: Usuario anónimo es null después de iniciar sesión');
+              throw Exception("Error al iniciar sesion anonima: usuario es null");
             } else {
+              LoggerService.auth('Usuario anónimo creado correctamente: ${sessionProvider.user?.id}');
+              
               // Inicializar el perfil de usuario
               final usuarioProvider = context.read<UsuarioProvider>();
+              LoggerService.auth('Inicializando perfil de usuario anónimo...');
               await usuarioProvider.inicializar();
+              LoggerService.auth('Perfil de usuario anónimo inicializado');
               
               // Cerrar el diálogo de carga
               LoadingDialog.hide(context);
               
               // Navegar a la pantalla principal
+              LoggerService.auth('Navegando a la pantalla principal');
               Navigator.pushNamedAndRemoveUntil(
                 context, 
                 "/home", 
@@ -179,6 +270,8 @@ class BotonLoginAno extends StatelessWidget {
           } catch (e) {
             // Cerrar el diálogo de carga
             LoadingDialog.hide(context);
+            
+            LoggerService.error('Error en botón de inicio anónimo: $e');
             
             // Mostrar error con el nuevo servicio
             ErrorService.mostrarError(
@@ -231,18 +324,32 @@ class BotonLoginGoogle extends StatelessWidget {
             // Mostrar diálogo de carga
             LoadingDialog.show(context, mensaje: 'Conectando con Google...');
             
-            await context.read<SessionProvider>().iniciarGoogle();
-            if (context.read<SessionProvider>().user == null) {
-              throw Exception("Error al iniciar sesión con Google");
+            LoggerService.auth('Botón de inicio con Google presionado');
+            
+            // Usar la nueva función de autenticación con Google
+            final sessionProvider = context.read<SessionProvider>();
+            
+            LoggerService.auth('Llamando a signInWithGoogle()...');
+            final authResponse = await sessionProvider.signInWithGoogle();
+            
+            if (authResponse.user == null) {
+              LoggerService.error('Error: Usuario de Google es null después de iniciar sesión');
+              throw Exception("Error al iniciar sesión con Google: usuario es null");
             } else {
+              LoggerService.auth('Usuario de Google creado correctamente: ${authResponse.user?.id}');
+              LoggerService.auth('Email: ${authResponse.user?.email}');
+              
               // Inicializar el perfil de usuario
               final usuarioProvider = context.read<UsuarioProvider>();
+              LoggerService.auth('Inicializando perfil de usuario de Google...');
               await usuarioProvider.inicializar();
+              LoggerService.auth('Perfil de usuario de Google inicializado');
               
               // Cerrar el diálogo de carga
               LoadingDialog.hide(context);
               
               // Navegar a la pantalla principal
+              LoggerService.auth('Navegando a la pantalla principal');
               Navigator.pushNamedAndRemoveUntil(
                 context, 
                 "/home", 
@@ -252,6 +359,8 @@ class BotonLoginGoogle extends StatelessWidget {
           } catch (e) {
             // Cerrar el diálogo de carga
             LoadingDialog.hide(context);
+            
+            LoggerService.error('Error en botón de inicio con Google: $e');
             
             // Mostrar error con el nuevo servicio
             ErrorService.mostrarError(

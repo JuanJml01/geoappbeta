@@ -7,6 +7,7 @@ import 'package:geoapptest/Pages/todos_reportes.dart';
 import 'package:geoapptest/Provider/reporteProvider.dart';
 import 'package:geoapptest/Provider/userProvider.dart';
 import 'package:geoapptest/Provider/usuarioProvider.dart';
+import 'package:geoapptest/Service/logger_service.dart';
 import 'package:geoapptest/Service/tomarFoto.dart';
 import 'package:geoapptest/mocha.dart';
 import 'package:geoapptest/skeleton.dart';
@@ -19,16 +20,44 @@ Future<void> main() async {
   // Cargar variables de entorno si es necesario
   try {
     await dotenv.load(fileName: ".env");
+    debugPrint('Archivo .env cargado correctamente');
   } catch (e) {
     // Continuar si no hay archivo .env
-    debugPrint('No se encontró archivo .env, usando valores predeterminados');
+    debugPrint('No se encontró archivo .env, usando valores predeterminados: $e');
+  }
+  
+  // Obtener y verificar la URL y clave de Supabase
+  final supabaseUrl = dotenv.env['SUPABASE_URL'];
+  final supabaseKey = dotenv.env['SUPABASE_KEY'];
+  
+  debugPrint('SUPABASE_URL: $supabaseUrl');
+  
+  if (supabaseUrl == null || supabaseUrl.isEmpty) {
+    debugPrint('⚠️ ERROR: SUPABASE_URL no está configurado en el archivo .env');
+  } else if (!supabaseUrl.contains('supabase.co')) {
+    debugPrint('⚠️ ERROR: SUPABASE_URL no parece ser una URL válida de Supabase: $supabaseUrl');
+  }
+  
+  if (supabaseKey == null || supabaseKey.isEmpty) {
+    debugPrint('⚠️ ERROR: SUPABASE_KEY no está configurado en el archivo .env');
   }
   
   // Inicializar Supabase con URLs y claves
-  await Supabase.initialize(
-    url: dotenv.env['SUPABASE_URL'] ?? 'https://ouyznxujncdrdwpzchnf.supabase.co',
-    anonKey: dotenv.env['SUPABASE_KEY'] ?? 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4b3h4dWdva2poa3Rnanopamd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTY1ODA2MzcsImV4cCI6MjAzMjE1NjYzN30.UIDGnLWDEjfQxUBbFZlBmOiOMjhlEAKBbFfnbKgSTlY',
-  );
+  try {
+    // URL correcta para la API de Supabase
+    final correctUrl = 'https://ouyznxujncdrdwpzchnf.supabase.co';
+    
+    debugPrint('Inicializando Supabase con URL: $correctUrl');
+    
+    await Supabase.initialize(
+      url: correctUrl,
+      anonKey: supabaseKey ?? '',
+    );
+    
+    debugPrint('✅ Supabase inicializado correctamente');
+  } catch (e) {
+    debugPrint('❌ Error al inicializar Supabase: $e');
+  }
   
   runApp(const MyApp());
 }
