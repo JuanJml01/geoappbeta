@@ -5,48 +5,56 @@ import 'dart:io';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:geoappbeta/Service/logger_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 enum FotoAceptada { si, no }
 
 class TomarFoto {
-  File? _foto;
+  final supabase = Supabase.instance.client;
+  XFile? _foto;
+  String? _url;
   late FotoAceptada _aceptada;
 
-  File? get foto => _foto;
+  XFile? get foto => _foto;
+  String? get url => _url;
   FotoAceptada get aceptada => _aceptada;
+
+  set foto(XFile? value) => _foto = value;
+  set url(String? value) => _url = value;
 
   Future<void> camara() async {
     final ImagePicker picker = ImagePicker();
-
-    final foto = await picker.pickImage(
-        source: ImageSource.camera, preferredCameraDevice: CameraDevice.rear);
-    if (foto != null) {
-      _foto = File(foto.path);
-    }
+    _foto = await picker.pickImage(source: ImageSource.camera);
   }
 
-  Future<void> scanearFoto({required File foto}) async {
-    final apikeys = dotenv.env['apiKey'] ?? "";
-    final model = GenerativeModel(
-        apiKey: apikeys,
-        model: 'gemini-2.0-flash-exp',
-        generationConfig:
-            GenerationConfig(responseMimeType: 'application/json'));
+  Future<void> scanearFoto({required XFile foto}) async {
+    try {
+      final bytes = await foto.readAsBytes();
+      final fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final path = 'reportes/$fileName';
 
-    final prompt = TextPart(
-        "Si la imagen cumple algunas siguintes condiciones tienes que responder si o no:\n-En la imagen se ve lo siguiente: basura y calle\n-En la imagen se ve lo siguiente: reciclaje, calle y basura\n-En la imagen se ve lo siguiente: Desechos, calle, basura");
-    final imageBytes = await foto.readAsBytes();
-    final imageParts = DataPart('image/jpeg', imageBytes);
+      await supabase.storage.from('imagenes').uploadBinary(
+            path,
+            bytes,
+            fileOptions: const FileOptions(
+              cacheControl: '3600',
+              upsert: false,
+            ),
+          );
 
-    final response = await model.generateContent([
-      Content.multi([prompt, imageParts])
-    ]);
-    if (response.text != null) {
-      response.text == "si" && response.text == "Si"
-          ? _aceptada = FotoAceptada.si
-          : _aceptada = FotoAceptada.no;
-    } else {
-      throw Exception("Error en escanera la imagen");
+      final imageUrl = supabase.storage.from('imagenes').getPublicUrl(path);
+      
+      // Registrar el log de la subida de imagen
+      await LoggerService().logImageUpload(
+        imageUrl: imageUrl,
+        reportId: DateTime.now().millisecondsSinceEpoch.toString(),
+      );
+
+      this.foto = foto;
+      this.url = imageUrl;
+    } catch (e) {
+      throw Exception('Error al escanear la foto: $e');
     }
   }
 }
