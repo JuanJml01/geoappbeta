@@ -413,9 +413,23 @@ class BotonLoginGoogle extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Image.network(
-              "https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg",
+            Container(
+              width: screenHeight * 0.03,
               height: screenHeight * 0.03,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Center(
+                child: Text(
+                  "G",
+                  style: TextStyle(
+                    color: Colors.blue,
+                    fontWeight: FontWeight.bold,
+                    fontSize: (screenWidth + screenHeight) * 0.014,
+                  ),
+                ),
+              ),
             ),
             SizedBox(width: 8),
             Text(

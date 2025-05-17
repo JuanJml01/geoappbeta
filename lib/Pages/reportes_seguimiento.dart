@@ -421,6 +421,8 @@ class _ReportesSeguimientoPageState extends State<ReportesSeguimientoPage> {
         return Colors.blue;
       case 'resuelto':
         return Colors.green;
+      case 'cancelado':
+        return Colors.red;
       default:
         return Colors.grey;
     }

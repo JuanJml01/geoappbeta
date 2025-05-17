@@ -52,14 +52,32 @@ class _DetallesReportePageState extends State<DetallesReportePage> with SingleTi
       context.read<Reporteprovider>().incrementarVistas(widget.reporte.id);
       _obtenerUbicacionUsuario();
       _verificarSeguimiento();
+      
+      // Escuchar cambios de pestaña para inicializar el mapa cuando sea necesario
+      _tabController.addListener(_handleTabChange);
     });
   }
   
   @override
   void dispose() {
+    _tabController.removeListener(_handleTabChange);
     _tabController.dispose();
     _mapController.dispose();
     super.dispose();
+  }
+  
+  // Manejar cambios de pestaña
+  void _handleTabChange() {
+    // Si cambiamos a la pestaña del mapa, asegurar que se renderice correctamente
+    if (_tabController.index == 1) {
+      // Pequeño retraso para asegurar que el widget del mapa esté montado
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (mounted && _mapController.camera.zoom == 0) {
+          final reporteLatLng = LatLng(widget.reporte.latitud, widget.reporte.longitud);
+          _mapController.move(reporteLatLng, 15.0);
+        }
+      });
+    }
   }
   
   // Verificar si el reporte está en seguimiento
@@ -412,7 +430,37 @@ class _DetallesReportePageState extends State<DetallesReportePage> with SingleTi
                   ? 'Pendiente de revisión' 
                   : widget.reporte.estado == EstadoReporte.enProceso 
                       ? 'En proceso de solución' 
-                      : 'Resuelto'),
+                      : widget.reporte.estado == EstadoReporte.cancelado
+                          ? 'Cancelado'
+                          : 'Resuelto',
+              trailing: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: widget.reporte.estado == EstadoReporte.pendiente
+                      ? Colors.orange
+                      : widget.reporte.estado == EstadoReporte.enProceso
+                          ? Colors.blue
+                          : widget.reporte.estado == EstadoReporte.cancelado
+                              ? Colors.red
+                              : Colors.green,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  widget.reporte.estado == EstadoReporte.pendiente
+                      ? 'Pendiente'
+                      : widget.reporte.estado == EstadoReporte.enProceso
+                          ? 'En proceso'
+                          : widget.reporte.estado == EstadoReporte.cancelado
+                              ? 'Cancelado'
+                              : 'Resuelto',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+          ),
           
           // Sección de importancia y prioridad
           const SizedBox(height: 24),
@@ -633,11 +681,20 @@ class _DetallesReportePageState extends State<DetallesReportePage> with SingleTi
           options: MapOptions(
             initialCenter: reporteLatLng,
             initialZoom: 15.0,
+            onMapReady: () {
+              // Asegurar que el mapa se centre correctamente cuando esté listo
+              _mapController.move(reporteLatLng, 15.0);
+            },
           ),
           children: [
             TileLayer(
               urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
               userAgentPackageName: 'com.geoappbeta.app',
+              // Añadir opciones adicionales para mejorar la carga
+              maxZoom: 19,
+              keepBuffer: 5,
+              tileSize: 256,
+              backgroundColor: Colors.grey[300],
             ),
             MarkerLayer(
               markers: [
@@ -859,6 +916,105 @@ class _DetallesReportePageState extends State<DetallesReportePage> with SingleTi
                 label: const Text('Es prioritario'),
               ),
             ],
+          ),
+          
+          // Sección de comentarios
+          if (widget.reporte.calificaciones.isNotEmpty) ...[
+            const SizedBox(height: 32),
+            const Divider(),
+            const SizedBox(height: 16),
+            
+            Row(
+              children: [
+                const Icon(Icons.comment, color: Colors.blue),
+                const SizedBox(width: 8),
+                Text(
+                  'Comentarios (${widget.reporte.calificaciones.where((c) => c.comentario != null && c.comentario!.isNotEmpty).length})',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            
+            // Lista de comentarios
+            ...widget.reporte.calificaciones
+              .where((c) => c.comentario != null && c.comentario!.isNotEmpty)
+              .map((c) => _buildComentarioItem(c))
+              .toList(),
+          ],
+        ],
+      ),
+    );
+  }
+  
+  // Construir un elemento de comentario
+  Widget _buildComentarioItem(ReporteCalificacion calificacion) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              // Avatar del usuario (genérico)
+              CircleAvatar(
+                backgroundColor: Colors.blue[100],
+                radius: 16,
+                child: Text(
+                  (calificacion.email ?? 'A').substring(0, 1).toUpperCase(),
+                  style: TextStyle(
+                    color: Colors.blue[800],
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Nombre del usuario o "Anónimo"
+              Expanded(
+                child: Text(
+                  calificacion.email?.split('@').first ?? 'Usuario anónimo',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              // Calificación con estrellas
+              Row(
+                children: List.generate(5, (index) {
+                  return Icon(
+                    index < (calificacion.calificacion / 2).round() 
+                        ? Icons.star 
+                        : Icons.star_border,
+                    color: Colors.amber,
+                    size: 14,
+                  );
+                }),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          // Comentario
+          Text(calificacion.comentario ?? ''),
+          const SizedBox(height: 4),
+          // Fecha del comentario
+          Align(
+            alignment: Alignment.bottomRight,
+            child: Text(
+              '${calificacion.createdAt.day}/${calificacion.createdAt.month}/${calificacion.createdAt.year}',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[600],
+              ),
+            ),
           ),
         ],
       ),

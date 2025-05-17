@@ -94,7 +94,7 @@ class ReporteCalificacion {
 
 // Enums antiguos (mantenidos para compatibilidad)
 enum TipoReporte { basura, vandalismo, fauna, agua, aire, ruido, otro }
-enum EstadoReporte { pendiente, enProceso, resuelto }
+enum EstadoReporte { pendiente, enProceso, resuelto, cancelado }
 
 String tipoReporteToString(TipoReporte tipo) {
   switch (tipo) {
@@ -123,6 +123,8 @@ String estadoReporteToString(EstadoReporte estado) {
       return 'En proceso';
     case EstadoReporte.resuelto:
       return 'Resuelto';
+    case EstadoReporte.cancelado:
+      return 'Cancelado';
   }
 }
 
@@ -150,9 +152,12 @@ EstadoReporte estadoReporteFromString(String estado) {
     case 'pendiente':
       return EstadoReporte.pendiente;
     case 'en proceso':
+    case 'en_proceso':
       return EstadoReporte.enProceso;
     case 'resuelto':
       return EstadoReporte.resuelto;
+    case 'cancelado':
+      return EstadoReporte.cancelado;
     default:
       return EstadoReporte.pendiente;
   }

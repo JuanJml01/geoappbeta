@@ -6,6 +6,9 @@ import 'package:geoappbeta/Service/error_service.dart';
 import 'package:geoappbeta/mocha.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:geoappbeta/Provider/reporteProvider.dart';
+import 'package:geoappbeta/Model/reporteModel.dart';
+import 'package:geoappbeta/Pages/beta_detalles_reporte.dart';
 
 class MiPerfilPage extends StatefulWidget {
   const MiPerfilPage({super.key});
@@ -16,6 +19,7 @@ class MiPerfilPage extends StatefulWidget {
 
 class _MiPerfilPageState extends State<MiPerfilPage> {
   bool _isLoading = true;
+  int _reportesCount = 0;
   
   @override
   void initState() {
@@ -25,10 +29,28 @@ class _MiPerfilPageState extends State<MiPerfilPage> {
   
   Future<void> _cargarDatosUsuario() async {
     try {
+      setState(() {
+        _isLoading = true;
+      });
+      
       final usuarioProvider = Provider.of<UsuarioProvider>(context, listen: false);
+      final reporteProvider = Provider.of<Reporteprovider>(context, listen: false);
+      
+      // Inicializar el usuario si es necesario
       if (usuarioProvider.usuarioActual == null) {
         await usuarioProvider.inicializar();
       }
+      
+      // Cargar reportes del usuario
+      final sessionProvider = Provider.of<SessionProvider>(context, listen: false);
+      final user = sessionProvider.user;
+      
+      if (user != null && user.email != null) {
+        // Cargar reportes del usuario por email
+        await reporteProvider.fetchReporteForEmail(nombre: user.email!);
+        _reportesCount = reporteProvider.reportes.length;
+      }
+      
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -63,9 +85,10 @@ class _MiPerfilPageState extends State<MiPerfilPage> {
         final bool isAnonymous = authUser == null || authUser.email == null || authUser.email!.isEmpty;
         
         // Estadísticas
-        final int reportesCount = 0; // Esto podría venir de un contador en la base de datos
+        final int reportesCount = _reportesCount; // Usar el contador real de reportes
         final int zonasCount = usuario?.zonasInteres.length ?? 0;
         final int logrosCount = usuario?.logrosObtenidos ?? 0;
+        final int reportesSeguimientoCount = usuario?.reportesEnSeguimiento ?? 0;
         
         if (_isLoading) {
           return Center(
@@ -258,8 +281,8 @@ class _MiPerfilPageState extends State<MiPerfilPage> {
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
                         _StatCard(title: 'Reportes', value: reportesCount.toString(), icon: Icons.assignment, color: EcoPalette.greenPrimary.color),
-                        _StatCard(title: 'Zonas', value: zonasCount.toString(), icon: Icons.place, color: EcoPalette.greenDark.color),
-                        _StatCard(title: 'Logros', value: logrosCount.toString(), icon: Icons.emoji_events, color: EcoPalette.accent.color),
+                        _StatCard(title: 'Seguimiento', value: reportesSeguimientoCount.toString(), icon: Icons.bookmark, color: EcoPalette.accent.color),
+                        _StatCard(title: 'Logros', value: logrosCount.toString(), icon: Icons.emoji_events, color: EcoPalette.greenDark.color),
                       ],
                     ),
                   ),
@@ -416,22 +439,87 @@ class _StatCard extends StatelessWidget {
 class _TabReportes extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.assignment_outlined, size: 48, color: EcoPalette.greenLight.color),
-          const SizedBox(height: 16),
-          Text(
-            'Tus reportes aparecerán aquí', 
-            style: TextStyle(
-              color: EcoPalette.greenDark.color,
-              fontWeight: FontWeight.w500,
-              fontSize: 16,
-            )
+    // Obtener reportes del provider
+    final reportes = Provider.of<Reporteprovider>(context).reportes;
+    
+    if (reportes.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.assignment_outlined, size: 48, color: EcoPalette.greenLight.color),
+            const SizedBox(height: 16),
+            Text(
+              'No has creado reportes aún', 
+              style: TextStyle(
+                color: EcoPalette.greenDark.color,
+                fontWeight: FontWeight.w500,
+                fontSize: 16,
+              )
+            ),
+            const SizedBox(height: 8),
+            ElevatedButton.icon(
+              onPressed: () {
+                // Navegar a la página de crear reporte
+                Navigator.pushNamed(context, '/subiendo');
+              },
+              icon: const Icon(Icons.add),
+              label: const Text('Crear reporte'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: EcoPalette.greenPrimary.color,
+                foregroundColor: EcoPalette.white.color,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    
+    return ListView.builder(
+      itemCount: reportes.length,
+      itemBuilder: (context, index) {
+        final reporte = reportes[index];
+        return ListTile(
+          leading: CircleAvatar(
+            backgroundImage: CachedNetworkImageProvider(reporte.imagen),
           ),
-        ],
-      ),
+          title: Text(reporte.tipoTags.map((t) => t.nombre).join(', ')),
+          subtitle: Text(
+            reporte.descripcion.isNotEmpty 
+                ? reporte.descripcion.substring(0, reporte.descripcion.length > 50 ? 50 : reporte.descripcion.length) + (reporte.descripcion.length > 50 ? '...' : '')
+                : 'Sin descripción'
+          ),
+          trailing: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: reporte.estado == EstadoReporte.pendiente
+                  ? Colors.orange
+                  : reporte.estado == EstadoReporte.enProceso
+                      ? Colors.blue
+                      : reporte.estado == EstadoReporte.cancelado
+                          ? Colors.red
+                          : Colors.green,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              estadoReporteToString(reporte.estado),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => DetallesReportePage(reporte: reporte),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }
