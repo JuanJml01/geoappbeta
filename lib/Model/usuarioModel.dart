@@ -125,6 +125,43 @@ class ZonaInteres {
   }
 }
 
+// Clase para representar un reporte en seguimiento
+class ReporteSeguimiento {
+  final int id;
+  final int reporteId;
+  final String userId;
+  final DateTime fechaAdicion;
+  final String? notas;
+  
+  const ReporteSeguimiento({
+    required this.id,
+    required this.reporteId,
+    required this.userId,
+    required this.fechaAdicion,
+    this.notas,
+  });
+  
+  factory ReporteSeguimiento.fromMap(Map<String, dynamic> data) {
+    return ReporteSeguimiento(
+      id: data['id'] is int ? data['id'] : int.tryParse(data['id']?.toString() ?? '0') ?? 0,
+      reporteId: data['reporte_id'] is int ? data['reporte_id'] : int.tryParse(data['reporte_id']?.toString() ?? '0') ?? 0,
+      userId: data['user_id']?.toString() ?? '',
+      fechaAdicion: data['fecha_adicion'] != null 
+          ? DateTime.parse(data['fecha_adicion']) 
+          : DateTime.now(),
+      notas: data['notas'],
+    );
+  }
+  
+  Map<String, dynamic> toMap() {
+    return {
+      'reporte_id': reporteId,
+      'user_id': userId,
+      'notas': notas,
+    };
+  }
+}
+
 // Modelo principal de Usuario
 class Usuario {
   final String id;
@@ -139,6 +176,7 @@ class Usuario {
   final DateTime updatedAt;
   final List<Logro> logros;
   final List<ZonaInteres> zonasInteres;
+  final List<ReporteSeguimiento> reportesSeguimiento;
   
   const Usuario({
     required this.id,
@@ -153,6 +191,7 @@ class Usuario {
     required this.updatedAt,
     this.logros = const [],
     this.zonasInteres = const [],
+    this.reportesSeguimiento = const [],
   });
   
   // Informar si el usuario tiene un perfil básico completo
@@ -167,8 +206,15 @@ class Usuario {
   // Número de zonas donde es vigilante
   int get zonasVigiladas => zonasInteres.where((z) => z.esVigilante).length;
   
+  // Número de reportes en seguimiento
+  int get reportesEnSeguimiento => reportesSeguimiento.length;
+  
   // Factory para crear un usuario desde los datos de la BD
-  factory Usuario.fromMap(Map<String, dynamic> data, {List<Logro>? logros, List<ZonaInteres>? zonas}) {
+  factory Usuario.fromMap(Map<String, dynamic> data, {
+    List<Logro>? logros, 
+    List<ZonaInteres>? zonas,
+    List<ReporteSeguimiento>? reportesSeguimiento,
+  }) {
     return Usuario(
       id: data['id']?.toString() ?? '',
       nombre: data['nombre'] ?? 'Usuario',
@@ -182,6 +228,7 @@ class Usuario {
       updatedAt: data['updated_at'] != null ? DateTime.parse(data['updated_at']) : DateTime.now(),
       logros: logros ?? [],
       zonasInteres: zonas ?? [],
+      reportesSeguimiento: reportesSeguimiento ?? [],
     );
   }
   
@@ -225,6 +272,7 @@ class Usuario {
     DateTime? updatedAt,
     List<Logro>? logros,
     List<ZonaInteres>? zonasInteres,
+    List<ReporteSeguimiento>? reportesSeguimiento,
   }) {
     return Usuario(
       id: id ?? this.id,
@@ -239,6 +287,7 @@ class Usuario {
       updatedAt: updatedAt ?? this.updatedAt,
       logros: logros ?? this.logros,
       zonasInteres: zonasInteres ?? this.zonasInteres,
+      reportesSeguimiento: reportesSeguimiento ?? this.reportesSeguimiento,
     );
   }
 } 

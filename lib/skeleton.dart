@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:geoappbeta/Pages/beta_config.dart';
 import 'package:geoappbeta/Pages/beta_home.dart';
 import 'package:geoappbeta/Pages/beta_subir_reporte.dart';
+import 'package:geoappbeta/Pages/reportes_seguimiento.dart';
 import 'package:geoappbeta/Provider/userProvider.dart';
 import 'package:geoappbeta/mocha.dart';
 import 'package:geoappbeta/Pages/todos_reportes.dart';
@@ -49,50 +50,71 @@ class _SkeletonState extends State<Skeleton> {
     double screenWidth = MediaQuery.of(context).size.width;
     double screenHeight = MediaQuery.of(context).size.height;
 
-    BottomNavigationBar barraNavegacion = BottomNavigationBar(
-        showSelectedLabels: true,
-        unselectedItemColor: EcoPalette.gray.color,
-        selectedItemColor: EcoPalette.greenPrimary.color,
-        backgroundColor: EcoPalette.white.color,
-        type: BottomNavigationBarType.fixed,
-        iconSize: (screenWidth + screenHeight) * 0.027,
-        selectedFontSize: (screenWidth + screenHeight) * 0.012,
-        unselectedFontSize: (screenWidth + screenHeight) * 0.01,
-        currentIndex: _selectedIndex,
-        onTap: _itemTap,
-        elevation: 8,
-        items: [
-          BottomNavigationBarItem(
-              icon: Icon(Icons.list_alt), label: "Reportes"),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.map), label: "Mapa"),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.add_circle_outline), label: "Nuevo"),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.person), label: "Perfil"),
-        ]);
-    return PopScope(
-      canPop: false,
-      onPopInvoked: (didPop) {
-        if (didPop) return;
-        
-        if (_selectedIndex == 1) {
-          Navigator.of(context).pop();
-        } else {
-          _itemTap(1);
-        }
-      },
-      child: Scaffold(
-        body: PageView(
-            physics: ClampingScrollPhysics(),
-            onPageChanged: (index) {
-              setState(() {
-                _selectedIndex = index;
-              });
-            },
-            controller: _pageController,
-            children: [TodosReportesPage(), Home(), SubirReporte(), MiPerfilPage()]),
-        bottomNavigationBar: barraNavegacion,
+    return Scaffold(
+      body: PageView(
+        controller: _pageController,
+        onPageChanged: (index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+        },
+        children: [
+          const TodosReportesPage(),
+          const Home(),
+          const SubirReporte(),
+          const ReportesSeguimientoPage(),
+          const MiPerfilPage(),
+          const UsuarioConfig(),
+        ],
+      ),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          boxShadow: [
+            BoxShadow(
+              color: EcoPalette.black.color.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, -2),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          child: BottomNavigationBar(
+            currentIndex: _selectedIndex,
+            onTap: _itemTap,
+            type: BottomNavigationBarType.fixed,
+            backgroundColor: EcoPalette.white.color,
+            selectedItemColor: EcoPalette.greenPrimary.color,
+            unselectedItemColor: EcoPalette.gray.color,
+            selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold),
+            items: const [
+              BottomNavigationBarItem(
+                icon: Icon(Icons.map),
+                label: 'Reportes',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.home),
+                label: 'Inicio',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.add_circle),
+                label: 'Reportar',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.bookmark),
+                label: 'Seguimiento',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.person),
+                label: 'Perfil',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.settings),
+                label: 'Ajustes',
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

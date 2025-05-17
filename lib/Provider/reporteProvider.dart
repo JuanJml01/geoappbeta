@@ -455,4 +455,66 @@ class Reporteprovider extends ChangeNotifier {
       return null;
     }
   }
+
+  // Cargar un reporte específico por su ID
+  Future<Reporte?> cargarReporte(int reporteId) async {
+    try {
+      LoggerService.log('Cargando reporte con ID: $reporteId');
+      
+      // Verificar si ya tenemos el reporte en la lista
+      final reporteExistente = _reportes.firstWhere(
+        (r) => r.id == reporteId,
+        orElse: () => Reporte(
+          id: 0,
+          email: '',
+          imagen: '',
+          longitud: 0,
+          latitud: 0,
+        ),
+      );
+      
+      if (reporteExistente.id != 0) {
+        return reporteExistente;
+      }
+      
+      // Si no existe, cargarlo de la base de datos
+      final data = await _supabase
+        .from(_table)
+        .select('*, calificacion_promedio:reporte_calificaciones(avg(calificacion))')
+        .eq('id', reporteId)
+        .single();
+      
+      if (data != null) {
+        // Procesar calificación promedio
+        double calificacionPromedio = 0.0;
+        if (data['calificacion_promedio'] != null && 
+            data['calificacion_promedio'] is List && 
+            data['calificacion_promedio'].isNotEmpty) {
+          final promedio = data['calificacion_promedio'][0]['avg'];
+          if (promedio != null) {
+            calificacionPromedio = double.tryParse(promedio.toString()) ?? 0.0;
+          }
+        }
+        
+        // Crear objeto reporte
+        final reporteData = Map<String, dynamic>.from(data);
+        reporteData['calificacion_promedio'] = calificacionPromedio;
+        
+        final reporte = Reporte.fromMap(reporteData);
+        
+        // Agregar a la lista si no existe
+        if (!_reportes.any((r) => r.id == reporte.id)) {
+          _reportes.add(reporte);
+          notifyListeners();
+        }
+        
+        return reporte;
+      }
+      
+      return null;
+    } catch (e) {
+      LoggerService.error('❌ Error al cargar reporte específico: $e');
+      return null;
+    }
+  }
 }

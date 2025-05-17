@@ -7,6 +7,7 @@ import 'package:geoappbeta/Model/usuarioModel.dart';
 import 'package:geoappbeta/Service/logger_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 
 class UsuarioProvider extends ChangeNotifier {
   // Instancia de Supabase
@@ -65,16 +66,16 @@ class UsuarioProvider extends ChangeNotifier {
     }
   }
   
-  // Cargar información del usuario autenticado
+  // Cargar usuario autenticado
   Future<void> _cargarUsuarioAutenticado(String userId) async {
     try {
       _modoAnonimo = false;
-      LoggerService.log('🔄 Cargando perfil de usuario autenticado: $userId');
+      LoggerService.log('Cargando perfil de usuario autenticado...');
       
-      // Buscar en la tabla de usuarios
+      // Obtener datos del usuario
       final data = await _supabase
         .from('usuarios')
-        .select('*')
+        .select()
         .eq('id', userId)
         .single();
       
@@ -114,8 +115,26 @@ class UsuarioProvider extends ChangeNotifier {
           }
         }
         
+        // Cargar reportes en seguimiento
+        final seguimientoData = await _supabase
+          .from('reportes_seguimiento')
+          .select('*')
+          .eq('user_id', userId);
+        
+        List<ReporteSeguimiento> reportesSeguimiento = [];
+        if (seguimientoData != null) {
+          reportesSeguimiento = (seguimientoData as List)
+            .map((item) => ReporteSeguimiento.fromMap(item))
+            .toList();
+        }
+        
         // Crear objeto usuario
-        _usuarioActual = Usuario.fromMap(data, logros: logrosUsuario, zonas: zonasUsuario);
+        _usuarioActual = Usuario.fromMap(
+          data, 
+          logros: logrosUsuario, 
+          zonas: zonasUsuario,
+          reportesSeguimiento: reportesSeguimiento,
+        );
         LoggerService.log('✅ Usuario autenticado cargado: ${_usuarioActual?.nombre}');
       } else {
         // El usuario está autenticado pero no tiene perfil, crear uno
@@ -374,6 +393,189 @@ class UsuarioProvider extends ChangeNotifier {
       return true;
     } catch (e) {
       LoggerService.error('❌ Error al marcar zona como favorita: $e');
+      return false;
+    }
+  }
+  
+  // Agregar un reporte al seguimiento
+  Future<bool> agregarReporteSeguimiento(int reporteId, {String? notas}) async {
+    try {
+      if (_usuarioActual == null) {
+        LoggerService.error('No se puede agregar reporte a seguimiento: usuario no inicializado');
+        return false;
+      }
+      
+      if (modoAnonimo) {
+        LoggerService.error('No se puede agregar reporte a seguimiento: usuario anónimo');
+        return false;
+      }
+      
+      // Verificar si ya está siguiendo este reporte
+      final existente = await _supabase
+        .from('reportes_seguimiento')
+        .select('id')
+        .eq('user_id', _usuarioActual!.id)
+        .eq('reporte_id', reporteId)
+        .maybeSingle();
+      
+      if (existente != null) {
+        // Ya está siguiendo este reporte, actualizar notas si es necesario
+        if (notas != null) {
+          await _supabase
+            .from('reportes_seguimiento')
+            .update({'notas': notas})
+            .eq('id', existente['id']);
+        }
+        return true;
+      }
+      
+      // Insertar nuevo seguimiento
+      await _supabase
+        .from('reportes_seguimiento')
+        .insert({
+          'reporte_id': reporteId,
+          'user_id': _usuarioActual!.id,
+          'notas': notas,
+        });
+      
+      // Actualizar la lista local de reportes en seguimiento
+      final nuevoSeguimiento = ReporteSeguimiento(
+        id: 0, // ID temporal, se actualizará en la próxima carga
+        reporteId: reporteId,
+        userId: _usuarioActual!.id,
+        fechaAdicion: DateTime.now(),
+        notas: notas,
+      );
+      
+      final reportesSeguimiento = List<ReporteSeguimiento>.from(_usuarioActual!.reportesSeguimiento);
+      reportesSeguimiento.add(nuevoSeguimiento);
+      
+      _usuarioActual = _usuarioActual!.copyWith(
+        reportesSeguimiento: reportesSeguimiento,
+      );
+      
+      notifyListeners();
+      return true;
+    } catch (e) {
+      LoggerService.error('❌ Error al agregar reporte a seguimiento: $e');
+      return false;
+    }
+  }
+  
+  // Eliminar un reporte del seguimiento
+  Future<bool> eliminarReporteSeguimiento(int reporteId) async {
+    try {
+      if (_usuarioActual == null || modoAnonimo) {
+        LoggerService.error('No se puede eliminar reporte de seguimiento: usuario no inicializado o anónimo');
+        return false;
+      }
+      
+      // Eliminar de la base de datos
+      await _supabase
+        .from('reportes_seguimiento')
+        .delete()
+        .eq('user_id', _usuarioActual!.id)
+        .eq('reporte_id', reporteId);
+      
+      // Actualizar la lista local
+      final reportesSeguimiento = _usuarioActual!.reportesSeguimiento
+        .where((r) => r.reporteId != reporteId)
+        .toList();
+      
+      _usuarioActual = _usuarioActual!.copyWith(
+        reportesSeguimiento: reportesSeguimiento,
+      );
+      
+      notifyListeners();
+      return true;
+    } catch (e) {
+      LoggerService.error('❌ Error al eliminar reporte de seguimiento: $e');
+      return false;
+    }
+  }
+  
+  // Verificar si un reporte está en seguimiento
+  bool estaEnSeguimiento(int reporteId) {
+    if (_usuarioActual == null || modoAnonimo) {
+      return false;
+    }
+    
+    return _usuarioActual!.reportesSeguimiento.any((r) => r.reporteId == reporteId);
+  }
+  
+  // Cargar reportes en seguimiento
+  Future<void> cargarReportesSeguimiento() async {
+    try {
+      if (_usuarioActual == null || modoAnonimo) {
+        return;
+      }
+      
+      final data = await _supabase
+        .from('reportes_seguimiento')
+        .select('*')
+        .eq('user_id', _usuarioActual!.id);
+      
+      if (data != null) {
+        final reportesSeguimiento = (data as List)
+          .map((item) => ReporteSeguimiento.fromMap(item))
+          .toList();
+        
+        _usuarioActual = _usuarioActual!.copyWith(
+          reportesSeguimiento: reportesSeguimiento,
+        );
+        
+        notifyListeners();
+      }
+    } catch (e) {
+      LoggerService.error('❌ Error al cargar reportes en seguimiento: $e');
+    }
+  }
+  
+  // Votar por la prioridad de un reporte
+  Future<bool> votarPrioridadReporte(int reporteId, bool esPrioritario) async {
+    try {
+      String? userId;
+      String deviceId;
+      
+      if (_usuarioActual == null || modoAnonimo) {
+        deviceId = await _obtenerDeviceId();
+        userId = null;
+      } else {
+        deviceId = await _obtenerDeviceId();
+        userId = _usuarioActual!.id;
+      }
+      
+      // Verificar si ya votó
+      final existente = await _supabase
+        .from('reporte_prioridad_votos')
+        .select('id')
+        .or('device_id.eq.$deviceId,user_id.eq.$userId')
+        .eq('reporte_id', reporteId)
+        .maybeSingle();
+      
+      if (existente != null) {
+        // Actualizar voto existente
+        await _supabase
+          .from('reporte_prioridad_votos')
+          .update({
+            'es_prioritario': esPrioritario,
+          })
+          .eq('id', existente['id']);
+      } else {
+        // Insertar nuevo voto
+        await _supabase
+          .from('reporte_prioridad_votos')
+          .insert({
+            'reporte_id': reporteId,
+            'user_id': userId,
+            'device_id': deviceId,
+            'es_prioritario': esPrioritario,
+          });
+      }
+      
+      return true;
+    } catch (e) {
+      LoggerService.error('❌ Error al votar por prioridad: $e');
       return false;
     }
   }

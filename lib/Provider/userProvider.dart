@@ -113,12 +113,7 @@ class SessionProvider with ChangeNotifier {
         throw AuthException('Error de configuración: Variables de entorno incorrectas');
       }
       
-      // Generar nonce para seguridad
-      final rawNonce = _auth.client.auth.generateRawNonce();
-      final hashedNonce = sha256.convert(utf8.encode(rawNonce)).toString();
-      LoggerService.debug('Nonce generado');
-      
-      // Iniciar sesión con Google
+      // NO generamos nonce para evitar el error de autenticación
       LoggerService.auth('Solicitando cuenta de Google...');
       final GoogleSignInAccount? googleUser = await GoogleSignIn(
         serverClientId: clientId,
@@ -145,12 +140,12 @@ class SessionProvider with ChangeNotifier {
       
       LoggerService.auth('Tokens obtenidos. Iniciando sesión en Supabase...');
       
-      // Autenticar con Supabase usando el token de Google
+      // Autenticar con Supabase usando el token de Google SIN nonce
       final authResponse = await _auth.client.auth.signInWithIdToken(
         provider: OAuthProvider.google,
         idToken: idToken,
         accessToken: accessToken,
-        nonce: rawNonce,
+        // Eliminamos el parámetro nonce
       );
       
       // Actualizar el usuario y notificar a los listeners
