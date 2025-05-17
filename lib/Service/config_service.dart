@@ -16,7 +16,7 @@ class ConfigService {
     } else {
       // Verificar si la URL es correcta (debe contener supabase.co)
       if (!supabaseUrl.contains('supabase.co')) {
-        LoggerService.error('SUPABASE_URL no parece ser una URL válida de Supabase: $supabaseUrl');
+        LoggerService.error('SUPABASE_URL no parece ser una URL válida de Supabase');
         configuracionValida = false;
       } else {
         LoggerService.log('SUPABASE_URL configurado correctamente');
@@ -39,13 +39,21 @@ class ConfigService {
       configuracionValida = false;
     } else {
       // Verificar si el ID tiene el formato correcto
-      if (!webClientId.contains('.apps.googleusercontent.com') && 
-          !webClientId.trim().contains('-')) {
-        LoggerService.error('webClientId no parece tener el formato correcto: $webClientId');
+      if (!webClientId.contains('.apps.googleusercontent.com')) {
+        LoggerService.error('webClientId no parece tener el formato correcto de Google');
         configuracionValida = false;
       } else {
         LoggerService.log('webClientId configurado');
       }
+    }
+    
+    // Verificar apiKey
+    final apiKey = dotenv.env['apiKey'];
+    if (apiKey == null || apiKey.isEmpty) {
+      LoggerService.error('apiKey no está configurado en el archivo .env');
+      configuracionValida = false;
+    } else {
+      LoggerService.log('apiKey configurado');
     }
     
     return configuracionValida;
@@ -60,8 +68,8 @@ class ConfigService {
       final supabaseUrl = dotenv.env['SUPABASE_URL'];
       if (supabaseUrl == null || !supabaseUrl.contains('supabase.co')) {
         LoggerService.warning('La URL de Supabase parece incorrecta, podría ser la URL del dashboard en lugar de la API');
-        LoggerService.warning('URL actual: $supabaseUrl');
         LoggerService.warning('URL esperada debe contener: supabase.co');
+        return false;
       }
       
       // Intentar una operación simple que no requiera autenticación
@@ -93,17 +101,25 @@ class ConfigService {
       // No podemos verificar directamente la configuración de autenticación
       // desde el cliente, así que solo verificamos que las variables estén configuradas
       final webClientId = dotenv.env['webClientId'];
+      final apiKey = dotenv.env['apiKey'];
+      
       if (webClientId == null || webClientId.isEmpty) {
         LoggerService.error('webClientId no está configurado');
         return false;
       }
       
-      // Verificar si el webClientId tiene el formato correcto
-      if (!webClientId.trim().contains('-')) {
-        LoggerService.warning('webClientId no parece tener el formato correcto: $webClientId');
+      if (apiKey == null || apiKey.isEmpty) {
+        LoggerService.error('apiKey no está configurado');
+        return false;
       }
       
-      LoggerService.log('webClientId está configurado, asumiendo que la autenticación con Google está habilitada');
+      // Verificar si el webClientId tiene el formato correcto
+      if (!webClientId.contains('.apps.googleusercontent.com')) {
+        LoggerService.warning('webClientId no parece tener el formato correcto para Google Auth');
+        return false;
+      }
+      
+      LoggerService.log('Variables para Google Auth configuradas correctamente');
       return true;
     } catch (e) {
       LoggerService.error('Error al verificar la configuración de autenticación: $e');

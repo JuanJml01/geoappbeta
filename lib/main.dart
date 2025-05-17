@@ -17,46 +17,47 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Cargar variables de entorno si es necesario
+  // Cargar variables de entorno
   try {
     await dotenv.load(fileName: ".env");
     debugPrint('Archivo .env cargado correctamente');
+    
+    // Mostrar variables cargadas (sólo para depuración)
+    debugPrint('Variables cargadas:');
+    debugPrint('SUPABASE_URL: ${dotenv.env['SUPABASE_URL']?.isNotEmpty == true ? "Configurado" : "No configurado"}');
+    debugPrint('SUPABASE_KEY: ${dotenv.env['SUPABASE_KEY']?.isNotEmpty == true ? "Configurado" : "No configurado"}');
+    debugPrint('webClientId: ${dotenv.env['webClientId']?.isNotEmpty == true ? "Configurado" : "No configurado"}');
+    debugPrint('apiKey: ${dotenv.env['apiKey']?.isNotEmpty == true ? "Configurado" : "No configurado"}');
   } catch (e) {
     // Continuar si no hay archivo .env
-    debugPrint('No se encontró archivo .env, usando valores predeterminados: $e');
+    debugPrint('No se encontró archivo .env: $e');
+    debugPrint('Asegúrate de que el archivo .env exista en la raíz del proyecto con las siguientes variables:');
+    debugPrint('- SUPABASE_URL');
+    debugPrint('- SUPABASE_KEY');
+    debugPrint('- webClientId');
+    debugPrint('- apiKey');
   }
   
-  // Obtener y verificar la URL y clave de Supabase
-  final supabaseUrl = dotenv.env['SUPABASE_URL'];
-  final supabaseKey = dotenv.env['SUPABASE_KEY'];
-  
-  debugPrint('SUPABASE_URL: $supabaseUrl');
-  
-  if (supabaseUrl == null || supabaseUrl.isEmpty) {
-    debugPrint('⚠️ ERROR: SUPABASE_URL no está configurado en el archivo .env');
-  } else if (!supabaseUrl.contains('supabase.co')) {
-    debugPrint('⚠️ ERROR: SUPABASE_URL no parece ser una URL válida de Supabase: $supabaseUrl');
-  }
-  
-  if (supabaseKey == null || supabaseKey.isEmpty) {
-    debugPrint('⚠️ ERROR: SUPABASE_KEY no está configurado en el archivo .env');
-  }
-  
-  // Inicializar Supabase con URLs y claves
+  // Inicializar Supabase
   try {
-    // URL correcta para la API de Supabase
-    final correctUrl = 'https://ouyznxujncdrdwpzchnf.supabase.co';
+    final supabaseUrl = dotenv.env['SUPABASE_URL'];
+    final supabaseKey = dotenv.env['SUPABASE_KEY'];
     
-    debugPrint('Inicializando Supabase con URL: $correctUrl');
-    
-    await Supabase.initialize(
-      url: correctUrl,
-      anonKey: supabaseKey ?? '',
-    );
-    
-    debugPrint('✅ Supabase inicializado correctamente');
+    if (supabaseUrl != null && supabaseKey != null) {
+      debugPrint('Inicializando Supabase...');
+      
+      await Supabase.initialize(
+        url: supabaseUrl,
+        anonKey: supabaseKey,
+      );
+      
+      debugPrint('✅ Supabase inicializado correctamente');
+    } else {
+      throw Exception('Faltan variables de entorno necesarias para inicializar Supabase');
+    }
   } catch (e) {
     debugPrint('❌ Error al inicializar Supabase: $e');
+    debugPrint('Verifica que el archivo .env contenga SUPABASE_URL y SUPABASE_KEY válidos');
   }
   
   runApp(const MyApp());

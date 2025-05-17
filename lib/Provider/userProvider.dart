@@ -28,10 +28,12 @@ class SessionProvider with ChangeNotifier {
     
     // Verificar si falta el sufijo .apps.googleusercontent.com
     if (!clientId.contains('.apps.googleusercontent.com')) {
+      LoggerService.warning('webClientId no contiene el sufijo .apps.googleusercontent.com');
       clientId = '$clientId.apps.googleusercontent.com';
+      LoggerService.warning('Se ha añadido el sufijo automáticamente');
     }
     
-    LoggerService.auth('WebClientId obtenido: $clientId');
+    LoggerService.auth('WebClientId obtenido correctamente');
     return clientId;
   }
 
@@ -56,8 +58,6 @@ class SessionProvider with ChangeNotifier {
       if (clientId == null) {
         throw 'webClientId no configurado correctamente';
       }
-      
-      LoggerService.debug('WebClientId: $clientId');
       
       final googleUser = await GoogleSignIn(serverClientId: clientId).signIn();
       
@@ -101,13 +101,17 @@ class SessionProvider with ChangeNotifier {
     try {
       LoggerService.auth('Iniciando sesión con Google (método mejorado)...');
       
+      // Verificar si el archivo .env existe y tiene las variables necesarias
+      if (dotenv.env.isEmpty) {
+        LoggerService.error('El archivo .env no se ha cargado correctamente');
+        throw AuthException('Error de configuración: Variables de entorno no disponibles');
+      }
+      
       // Verificar si webClientId está configurado
       final clientId = _webClientId;
       if (clientId == null) {
-        throw AuthException('webClientId no está configurado correctamente');
+        throw AuthException('Error de configuración: Variables de entorno incorrectas');
       }
-      
-      LoggerService.debug('WebClientId: $clientId');
       
       // Generar nonce para seguridad
       final rawNonce = _auth.client.auth.generateRawNonce();

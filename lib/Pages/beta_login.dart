@@ -9,6 +9,7 @@ import 'package:geoappbeta/Service/logger_service.dart';
 import 'package:geoappbeta/Widgets/loading_dialog.dart';
 import 'package:provider/provider.dart';
 import 'package:geoappbeta/mocha.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -32,6 +33,16 @@ class _LoginState extends State<Login> {
     try {
       LoggerService.log('Verificando configuración de la aplicación...');
       
+      // Verificar si el archivo .env se cargó correctamente
+      if (dotenv.env.isEmpty) {
+        setState(() {
+          _configuracionVerificada = true;
+          _configuracionValida = false;
+          _mensajeError = 'Error de configuración:\n• No se encontró el archivo .env\n\nEjecuta el script crear_env.bat para generar el archivo .env con las variables necesarias.';
+        });
+        return;
+      }
+      
       // Verificar variables de entorno
       final variablesValidas = await ConfigService.verificarVariablesEntorno();
       
@@ -46,17 +57,35 @@ class _LoginState extends State<Login> {
         _configuracionValida = variablesValidas && conexionValida && googleAuthValido;
         
         if (!_configuracionValida) {
-          _mensajeError = 'Error de configuración: ';
-          if (!variablesValidas) _mensajeError = _mensajeError! + 'Variables de entorno incorrectas. ';
-          if (!conexionValida) _mensajeError = _mensajeError! + 'No se pudo conectar con Supabase. ';
-          if (!googleAuthValido) _mensajeError = _mensajeError! + 'Configuración de Google Auth incorrecta. ';
+          _mensajeError = 'Error de configuración:\n';
+          
+          // Verificar variables específicas
+          if (dotenv.env['SUPABASE_URL'] == null || dotenv.env['SUPABASE_URL']!.isEmpty) {
+            _mensajeError = _mensajeError! + '• SUPABASE_URL no está configurado\n';
+          }
+          if (dotenv.env['SUPABASE_KEY'] == null || dotenv.env['SUPABASE_KEY']!.isEmpty) {
+            _mensajeError = _mensajeError! + '• SUPABASE_KEY no está configurado\n';
+          }
+          if (dotenv.env['webClientId'] == null || dotenv.env['webClientId']!.isEmpty) {
+            _mensajeError = _mensajeError! + '• webClientId no está configurado\n';
+          }
+          if (dotenv.env['apiKey'] == null || dotenv.env['apiKey']!.isEmpty) {
+            _mensajeError = _mensajeError! + '• apiKey no está configurado\n';
+          }
+          
+          // Añadir mensajes de error generales
+          if (!variablesValidas) _mensajeError = _mensajeError! + '• Variables de entorno incorrectas\n';
+          if (!conexionValida) _mensajeError = _mensajeError! + '• No se pudo conectar con Supabase\n';
+          if (!googleAuthValido) _mensajeError = _mensajeError! + '• Configuración de Google Auth incorrecta\n';
+          
+          _mensajeError = _mensajeError! + '\nEjecuta el script crear_env.bat en la raíz del proyecto para generar el archivo .env con las variables correctas.';
         }
       });
     } catch (e) {
       setState(() {
         _configuracionVerificada = true;
         _configuracionValida = false;
-        _mensajeError = 'Error al verificar la configuración: $e';
+        _mensajeError = 'Error al verificar la configuración:\n$e\n\nVerifica el archivo .env en la raíz del proyecto.';
       });
       LoggerService.error('Error al verificar la configuración: $e');
     }
@@ -147,6 +176,17 @@ class _LoginState extends State<Login> {
                                 fontSize: 14,
                               ),
                               textAlign: TextAlign.center,
+                            ),
+                            SizedBox(height: 15),
+                            ElevatedButton(
+                              onPressed: () {
+                                _verificarConfiguracion();
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: EcoPalette.greenPrimary.color,
+                                foregroundColor: EcoPalette.white.color,
+                              ),
+                              child: Text("Intentar nuevamente"),
                             ),
                           ],
                         )
