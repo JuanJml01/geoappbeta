@@ -11,6 +11,8 @@ enum EcoPalette {
   // Colores de acento
   accent(color: Color(0xFF66BB6A)),          // Verde acento más vibrante
   accentLight(color: Color(0xFFA5D6A7)),     // Verde acento claro
+  amber(color: Color(0xFFFFC107)),           // Ámbar para calificaciones
+  blue(color: Color(0xFF2196F3)),            // Azul para seguimiento
   
   // Colores neutros
   beige(color: Color(0xFFF5F5DC)),           // Beige

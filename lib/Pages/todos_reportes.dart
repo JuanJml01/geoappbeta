@@ -4,6 +4,7 @@ import 'package:geoappbeta/Provider/reporteProvider.dart';
 import 'package:geoappbeta/Model/reporteModel.dart';
 import 'package:geoappbeta/mocha.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:geoappbeta/Provider/usuarioProvider.dart';
 
 class TodosReportesPage extends StatefulWidget {
   const TodosReportesPage({super.key});
@@ -16,6 +17,8 @@ class _TodosReportesPageState extends State<TodosReportesPage> {
   String? filtroTipo;
   String? filtroEstado;
   DateTimeRange? filtroFecha;
+  double? filtroCalificacionMinima;
+  bool? filtroPrioritarios;
   final ScrollController _scrollController = ScrollController();
   bool _isLoading = false;
   int _pageSize = 10;
@@ -76,11 +79,13 @@ class _TodosReportesPageState extends State<TodosReportesPage> {
               await showDialog(
                 context: context,
                 builder: (context) => _FiltrosDialog(
-                  onFiltro: (tipo, estado, fecha) {
+                  onFiltro: (tipo, estado, fecha, calificacionMinima, soloReportesPrioritarios) {
                     setState(() {
                       filtroTipo = tipo;
                       filtroEstado = estado;
                       filtroFecha = fecha;
+                      filtroCalificacionMinima = calificacionMinima;
+                      filtroPrioritarios = soloReportesPrioritarios;
                       // Resetear a la primera página al aplicar filtros
                       _currentDisplayed = _pageSize;
                     });
@@ -107,6 +112,14 @@ class _TodosReportesPageState extends State<TodosReportesPage> {
               r.createdAt.isAfter(filtroFecha!.start.subtract(const Duration(days: 1))) &&
               r.createdAt.isBefore(filtroFecha!.end.add(const Duration(days: 1)))
             ).toList();
+          }
+          // Filtrar por calificación mínima
+          if (filtroCalificacionMinima != null) {
+            allReportes = allReportes.where((r) => r.calificacionPromedio >= filtroCalificacionMinima!).toList();
+          }
+          // Filtrar solo prioritarios
+          if (filtroPrioritarios == true) {
+            allReportes = allReportes.where((r) => r.prioridadComunidad).toList();
           }
           
           // Ordenar por fecha de creación, más recientes primero
@@ -173,145 +186,232 @@ class _TodosReportesPageState extends State<TodosReportesPage> {
                       elevation: 2,
                       margin: EdgeInsets.symmetric(vertical: screenHeight * 0.01),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      child: ListTile(
-                        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        leading: Hero(
-                          tag: 'reporte-${reporte.id}',
-                          child: Container(
-                            width: 60,
-                            height: 60,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: EcoPalette.black.color.withOpacity(0.1),
-                                  blurRadius: 4,
-                                  offset: Offset(0, 2),
+                      child: Column(
+                        children: [
+                          // Contenido principal de la tarjeta
+                          ListTile(
+                            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            leading: Hero(
+                              tag: 'reporte-${reporte.id}',
+                              child: Container(
+                                width: 60,
+                                height: 60,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(12),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: EcoPalette.black.color.withOpacity(0.1),
+                                      blurRadius: 4,
+                                      offset: Offset(0, 2),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: CachedNetworkImage(
-                                imageUrl: reporte.imagen,
-                                fit: BoxFit.cover,
-                                placeholder: (context, url) => Container(
-                                  color: EcoPalette.grayLight.color,
-                                  child: Icon(
-                                    Icons.image,
-                                    color: EcoPalette.gray.color,
-                                  ),
-                                ),
-                                errorWidget: (context, url, error) => Container(
-                                  color: EcoPalette.grayLight.color,
-                                  child: Icon(
-                                    Icons.broken_image,
-                                    color: EcoPalette.error.color,
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: CachedNetworkImage(
+                                    imageUrl: reporte.imagen,
+                                    fit: BoxFit.cover,
+                                    placeholder: (context, url) => Container(
+                                      color: EcoPalette.grayLight.color,
+                                      child: Icon(
+                                        Icons.image,
+                                        color: EcoPalette.gray.color,
+                                      ),
+                                    ),
+                                    errorWidget: (context, url, error) => Container(
+                                      color: EcoPalette.grayLight.color,
+                                      child: Icon(
+                                        Icons.broken_image,
+                                        color: EcoPalette.error.color,
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
-                          ),
-                        ),
-                        title: Text(
-                          tipoReporteToString(reporte.tipo),
-                          style: TextStyle(
-                            color: EcoPalette.greenDark.color,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              reporte.descripcion,
-                              style: TextStyle(
-                                color: EcoPalette.black.color,
-                                fontSize: 14,
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            SizedBox(height: 8),
-                            Row(
+                            title: Row(
                               children: [
-                                Container(
-                                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: EcoPalette.greenLight.color,
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.calendar_today, 
-                                        size: 12, 
-                                        color: EcoPalette.greenDark.color
-                                      ),
-                                      SizedBox(width: 4),
-                                      Text(
-                                        '${reporte.createdAt.day}/${reporte.createdAt.month}/${reporte.createdAt.year}',
-                                        style: TextStyle(
-                                          color: EcoPalette.greenDark.color, 
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    ],
+                                Expanded(
+                                  child: Text(
+                                    tipoReporteToString(reporte.tipo),
+                                    style: TextStyle(
+                                      color: EcoPalette.greenDark.color,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
                                   ),
                                 ),
-                                SizedBox(width: 8),
-                                Container(
-                                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: _getEstadoColor(estadoReporteToString(reporte.estado)).withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.flag, 
-                                        size: 12, 
-                                        color: _getEstadoColor(estadoReporteToString(reporte.estado))
-                                      ),
-                                      SizedBox(width: 4),
-                                      Text(
-                                        estadoReporteToString(reporte.estado),
-                                        style: TextStyle(
-                                          color: _getEstadoColor(estadoReporteToString(reporte.estado)), 
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w500,
+                                // Indicador de prioridad
+                                if (reporte.prioridadComunidad)
+                                  Container(
+                                    padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.orange.withOpacity(0.2),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: Colors.orange),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.priority_high, color: Colors.orange, size: 12),
+                                        SizedBox(width: 2),
+                                        Text(
+                                          'Prioritario',
+                                          style: TextStyle(
+                                            color: Colors.orange,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 10,
+                                          ),
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
+                              ],
+                            ),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  reporte.descripcion,
+                                  style: TextStyle(
+                                    color: EcoPalette.black.color,
+                                    fontSize: 14,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    // Calificación promedio
+                                    Container(
+                                      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: EcoPalette.amber.color.withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.star, 
+                                            size: 12, 
+                                            color: EcoPalette.amber.color
+                                          ),
+                                          SizedBox(width: 2),
+                                          Text(
+                                            '${reporte.calificacionPromedio.toStringAsFixed(1)}',
+                                            style: TextStyle(
+                                              color: EcoPalette.amber.color, 
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    SizedBox(width: 6),
+                                    // Fecha
+                                    Container(
+                                      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: EcoPalette.greenLight.color,
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.calendar_today, 
+                                            size: 12, 
+                                            color: EcoPalette.greenDark.color
+                                          ),
+                                          SizedBox(width: 2),
+                                          Text(
+                                            '${reporte.createdAt.day}/${reporte.createdAt.month}/${reporte.createdAt.year}',
+                                            style: TextStyle(
+                                              color: EcoPalette.greenDark.color, 
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    SizedBox(width: 6),
+                                    // Estado
+                                    Container(
+                                      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: _getEstadoColor(estadoReporteToString(reporte.estado)).withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.flag, 
+                                            size: 12, 
+                                            color: _getEstadoColor(estadoReporteToString(reporte.estado))
+                                          ),
+                                          SizedBox(width: 2),
+                                          Text(
+                                            estadoReporteToString(reporte.estado),
+                                            style: TextStyle(
+                                              color: _getEstadoColor(estadoReporteToString(reporte.estado)), 
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
-                          ],
-                        ),
-                        trailing: Container(
-                          decoration: BoxDecoration(
-                            color: EcoPalette.greenPrimary.color.withOpacity(0.1),
-                            shape: BoxShape.circle,
-                          ),
-                          child: IconButton(
-                            icon: Icon(
-                              Icons.arrow_forward_ios, 
-                              color: EcoPalette.greenPrimary.color,
-                              size: 16,
-                            ),
-                            onPressed: () {
+                            onTap: () {
                               Navigator.pushNamed(context, '/verReporte', arguments: reporte);
                             },
                           ),
-                        ),
-                        onTap: () {
-                          Navigator.pushNamed(context, '/verReporte', arguments: reporte);
-                        },
+                          
+                          // Barra de acciones rápidas
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                            child: Divider(height: 1, color: EcoPalette.grayLight.color),
+                          ),
+                          
+                          // Botones de acción
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                // Botón de seguimiento
+                                _buildSeguimientoButton(context, reporte),
+                                
+                                // Botón de calificación
+                                _buildCalificacionButton(context, reporte),
+                                
+                                // Botón de prioridad
+                                _buildPrioridadButton(context, reporte),
+                                
+                                // Botón de ver detalles
+                                IconButton(
+                                  icon: Icon(
+                                    Icons.visibility,
+                                    color: EcoPalette.greenPrimary.color,
+                                    size: 20,
+                                  ),
+                                  onPressed: () {
+                                    Navigator.pushNamed(context, '/verReporte', arguments: reporte);
+                                  },
+                                  tooltip: 'Ver detalles',
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   );
@@ -357,14 +457,231 @@ class _TodosReportesPageState extends State<TodosReportesPage> {
         return EcoPalette.info.color;
       case 'resuelto':
         return EcoPalette.success.color;
+      case 'cancelado':
+        return Colors.red;
       default:
         return EcoPalette.info.color;
     }
   }
+
+  // Método para construir el botón de seguimiento
+  Widget _buildSeguimientoButton(BuildContext context, Reporte reporte) {
+    final usuarioProvider = Provider.of<UsuarioProvider>(context, listen: false);
+    final enSeguimiento = usuarioProvider.estaEnSeguimiento(reporte.id);
+    
+    return IconButton(
+      icon: Icon(
+        enSeguimiento ? Icons.bookmark : Icons.bookmark_border,
+        color: enSeguimiento ? EcoPalette.blue.color : EcoPalette.gray.color,
+        size: 20,
+      ),
+      onPressed: () async {
+        if (enSeguimiento) {
+          await usuarioProvider.eliminarReporteSeguimiento(reporte.id);
+        } else {
+          await usuarioProvider.agregarReporteSeguimiento(reporte.id);
+        }
+        // Forzar reconstrucción
+        setState(() {});
+      },
+      tooltip: enSeguimiento ? 'Quitar de seguimiento' : 'Seguir reporte',
+    );
+  }
+  
+  // Método para construir el botón de calificación
+  Widget _buildCalificacionButton(BuildContext context, Reporte reporte) {
+    return IconButton(
+      icon: Icon(
+        Icons.star_border,
+        color: EcoPalette.amber.color,
+        size: 20,
+      ),
+      onPressed: () {
+        _mostrarDialogoCalificacion(context, reporte);
+      },
+      tooltip: 'Calificar reporte',
+    );
+  }
+  
+  // Método para construir el botón de prioridad
+  Widget _buildPrioridadButton(BuildContext context, Reporte reporte) {
+    final usuarioProvider = Provider.of<UsuarioProvider>(context, listen: false);
+    
+    return IconButton(
+      icon: Icon(
+        Icons.priority_high,
+        color: reporte.prioridadComunidad ? Colors.orange : EcoPalette.gray.color,
+        size: 20,
+      ),
+      onPressed: () {
+        _mostrarDialogoPrioridad(context, reporte);
+      },
+      tooltip: 'Marcar como prioritario',
+    );
+  }
+  
+  // Diálogo para calificar un reporte
+  void _mostrarDialogoCalificacion(BuildContext context, Reporte reporte) {
+    int calificacionSeleccionada = 0;
+    String comentario = '';
+    
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: Text('Calificar reporte'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('¿Qué tan importante consideras este problema ambiental?'),
+                  SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(5, (index) {
+                      final starValue = index + 1;
+                      return IconButton(
+                        icon: Icon(
+                          calificacionSeleccionada >= starValue * 2 
+                              ? Icons.star 
+                              : calificacionSeleccionada >= starValue * 2 - 1 
+                                  ? Icons.star_half 
+                                  : Icons.star_border,
+                          color: EcoPalette.amber.color,
+                          size: 30,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            calificacionSeleccionada = starValue * 2;
+                          });
+                        },
+                      );
+                    }),
+                  ),
+                  SizedBox(height: 16),
+                  TextField(
+                    maxLines: 2,
+                    decoration: InputDecoration(
+                      labelText: 'Comentario (opcional)',
+                      hintText: 'Escribe un comentario sobre este reporte...',
+                      border: OutlineInputBorder(),
+                    ),
+                    onChanged: (value) {
+                      comentario = value;
+                    },
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  child: Text('Cancelar'),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+                TextButton(
+                  child: Text('Enviar'),
+                  onPressed: calificacionSeleccionada > 0 ? () async {
+                    final usuarioProvider = Provider.of<UsuarioProvider>(context, listen: false);
+                    await usuarioProvider.calificarReporte(
+                      reporte.id,
+                      calificacionSeleccionada,
+                      comentario: comentario.isNotEmpty ? comentario : null,
+                    );
+                    
+                    // Recargar el reporte
+                    final reporteProvider = Provider.of<Reporteprovider>(context, listen: false);
+                    await reporteProvider.cargarReporte(reporte.id);
+                    
+                    Navigator.of(context).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('¡Gracias por tu valoración!'),
+                        backgroundColor: EcoPalette.success.color,
+                      ),
+                    );
+                  } : null,
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+  
+  // Diálogo para marcar un reporte como prioritario
+  void _mostrarDialogoPrioridad(BuildContext context, Reporte reporte) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Prioridad del reporte'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('¿Consideras que este problema ambiental es prioritario?'),
+              SizedBox(height: 16),
+              Text(
+                'Tu voto ayuda a determinar qué problemas ambientales deberían atenderse primero.',
+                style: TextStyle(
+                  color: EcoPalette.gray.color,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton.icon(
+              icon: Icon(Icons.thumb_down, color: EcoPalette.error.color),
+              label: Text('No es prioritario'),
+              onPressed: () async {
+                final usuarioProvider = Provider.of<UsuarioProvider>(context, listen: false);
+                await usuarioProvider.votarPrioridadReporte(reporte.id, false);
+                
+                // Recargar el reporte
+                final reporteProvider = Provider.of<Reporteprovider>(context, listen: false);
+                await reporteProvider.cargarReporte(reporte.id);
+                
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('¡Gracias por tu voto!'),
+                    backgroundColor: EcoPalette.success.color,
+                  ),
+                );
+              },
+            ),
+            TextButton.icon(
+              icon: Icon(Icons.thumb_up, color: EcoPalette.success.color),
+              label: Text('Es prioritario'),
+              onPressed: () async {
+                final usuarioProvider = Provider.of<UsuarioProvider>(context, listen: false);
+                await usuarioProvider.votarPrioridadReporte(reporte.id, true);
+                
+                // Recargar el reporte
+                final reporteProvider = Provider.of<Reporteprovider>(context, listen: false);
+                await reporteProvider.cargarReporte(reporte.id);
+                
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('¡Gracias por tu voto!'),
+                    backgroundColor: EcoPalette.success.color,
+                  ),
+                );
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
 }
 
 class _FiltrosDialog extends StatefulWidget {
-  final void Function(String?, String?, DateTimeRange?) onFiltro;
+  final void Function(String?, String?, DateTimeRange?, double?, bool?) onFiltro;
   const _FiltrosDialog({required this.onFiltro});
 
   @override
@@ -375,6 +692,8 @@ class _FiltrosDialogState extends State<_FiltrosDialog> {
   String? tipo;
   String? estado;
   DateTimeRange? fecha;
+  double? calificacionMinima;
+  bool? soloReportesPrioritarios;
 
   // Lista de tipos de reportes para el desplegable
   final List<TipoReporte> _tiposReporte = TipoReporte.values;
@@ -512,43 +831,175 @@ class _FiltrosDialogState extends State<_FiltrosDialog> {
             
             SizedBox(height: 16),
             
-            // Selector de rango de fechas
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: EcoPalette.greenLight.color,
-                foregroundColor: EcoPalette.greenDark.color,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                minimumSize: Size(double.infinity, 50),
+            // Desplegable para calificación mínima
+            Container(
+              decoration: BoxDecoration(
+                border: Border.all(color: EcoPalette.greenLight.color),
+                borderRadius: BorderRadius.circular(10),
               ),
-              icon: Icon(Icons.date_range),
-              label: Text(
-                fecha == null ? 'Seleccionar rango de fechas' :
-                '${fecha!.start.day}/${fecha!.start.month}/${fecha!.start.year} - ${fecha!.end.day}/${fecha!.end.month}/${fecha!.end.year}',
-                style: TextStyle(fontWeight: FontWeight.w500),
-              ),
-              onPressed: () async {
-                final picked = await showDateRangePicker(
-                  context: context,
-                  firstDate: DateTime(2020),
-                  lastDate: DateTime.now().add(Duration(days: 1)),
-                  initialDateRange: fecha,
-                  builder: (context, child) => Theme(
-                    data: Theme.of(context).copyWith(
-                      colorScheme: ColorScheme.light(
-                        primary: EcoPalette.greenPrimary.color,
-                        onPrimary: EcoPalette.white.color,
-                        surface: EcoPalette.white.color,
-                        onSurface: EcoPalette.black.color,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                child: Row(
+                  children: [
+                    Icon(Icons.star, color: EcoPalette.amber.color),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<double>(
+                          hint: Text(
+                            'Calificación mínima',
+                            style: TextStyle(color: EcoPalette.gray.color),
+                          ),
+                          value: calificacionMinima,
+                          isExpanded: true,
+                          icon: Icon(Icons.arrow_drop_down, color: EcoPalette.greenPrimary.color),
+                          items: [
+                            DropdownMenuItem<double>(
+                              value: null,
+                              child: Text('Cualquier calificación'),
+                            ),
+                            DropdownMenuItem<double>(
+                              value: 1.0,
+                              child: Row(
+                                children: [
+                                  Text('1.0+ '),
+                                  Icon(Icons.star, color: EcoPalette.amber.color, size: 16),
+                                ],
+                              ),
+                            ),
+                            DropdownMenuItem<double>(
+                              value: 2.0,
+                              child: Row(
+                                children: [
+                                  Text('2.0+ '),
+                                  Icon(Icons.star, color: EcoPalette.amber.color, size: 16),
+                                  Icon(Icons.star, color: EcoPalette.amber.color, size: 16),
+                                ],
+                              ),
+                            ),
+                            DropdownMenuItem<double>(
+                              value: 3.0,
+                              child: Row(
+                                children: [
+                                  Text('3.0+ '),
+                                  Icon(Icons.star, color: EcoPalette.amber.color, size: 16),
+                                  Icon(Icons.star, color: EcoPalette.amber.color, size: 16),
+                                  Icon(Icons.star, color: EcoPalette.amber.color, size: 16),
+                                ],
+                              ),
+                            ),
+                            DropdownMenuItem<double>(
+                              value: 4.0,
+                              child: Row(
+                                children: [
+                                  Text('4.0+ '),
+                                  Icon(Icons.star, color: EcoPalette.amber.color, size: 16),
+                                  Icon(Icons.star, color: EcoPalette.amber.color, size: 16),
+                                  Icon(Icons.star, color: EcoPalette.amber.color, size: 16),
+                                  Icon(Icons.star, color: EcoPalette.amber.color, size: 16),
+                                ],
+                              ),
+                            ),
+                            DropdownMenuItem<double>(
+                              value: 4.5,
+                              child: Row(
+                                children: [
+                                  Text('4.5+ '),
+                                  Icon(Icons.star, color: EcoPalette.amber.color, size: 16),
+                                  Icon(Icons.star, color: EcoPalette.amber.color, size: 16),
+                                  Icon(Icons.star, color: EcoPalette.amber.color, size: 16),
+                                  Icon(Icons.star, color: EcoPalette.amber.color, size: 16),
+                                  Icon(Icons.star_half, color: EcoPalette.amber.color, size: 16),
+                                ],
+                              ),
+                            ),
+                          ],
+                          onChanged: (double? newValue) {
+                            setState(() {
+                              calificacionMinima = newValue;
+                            });
+                          },
+                        ),
                       ),
                     ),
-                    child: child!,
-                  ),
-                );
-                if (picked != null) setState(() => fecha = picked);
+                  ],
+                ),
+              ),
+            ),
+            
+            SizedBox(height: 16),
+            
+            // Checkbox para reportes prioritarios
+            CheckboxListTile(
+              title: Row(
+                children: [
+                  Icon(Icons.priority_high, color: Colors.orange),
+                  SizedBox(width: 8),
+                  Text('Solo reportes prioritarios'),
+                ],
+              ),
+              value: soloReportesPrioritarios ?? false,
+              activeColor: EcoPalette.greenPrimary.color,
+              contentPadding: EdgeInsets.zero,
+              controlAffinity: ListTileControlAffinity.leading,
+              onChanged: (bool? value) {
+                setState(() {
+                  soloReportesPrioritarios = value;
+                });
               },
+            ),
+            
+            SizedBox(height: 16),
+            
+            // Selector de rango de fechas
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(Icons.date_range, color: EcoPalette.greenPrimary.color),
+              title: Text(
+                fecha != null 
+                    ? 'Del ${fecha!.start.day}/${fecha!.start.month}/${fecha!.start.year} al ${fecha!.end.day}/${fecha!.end.month}/${fecha!.end.year}'
+                    : 'Seleccionar rango de fechas',
+                style: TextStyle(
+                  color: fecha != null ? EcoPalette.black.color : EcoPalette.gray.color,
+                ),
+              ),
+              onTap: () async {
+                final DateTimeRange? result = await showDateRangePicker(
+                  context: context,
+                  firstDate: DateTime(2020),
+                  lastDate: DateTime.now(),
+                  initialDateRange: fecha ?? DateTimeRange(
+                    start: DateTime.now().subtract(Duration(days: 30)),
+                    end: DateTime.now(),
+                  ),
+                  builder: (context, child) {
+                    return Theme(
+                      data: Theme.of(context).copyWith(
+                        colorScheme: ColorScheme.light(
+                          primary: EcoPalette.greenPrimary.color,
+                          onPrimary: EcoPalette.white.color,
+                          onSurface: EcoPalette.black.color,
+                        ),
+                      ),
+                      child: child!,
+                    );
+                  },
+                );
+                
+                if (result != null) {
+                  setState(() {
+                    fecha = result;
+                  });
+                }
+              },
+              trailing: fecha != null ? IconButton(
+                icon: Icon(Icons.clear, color: EcoPalette.error.color),
+                onPressed: () {
+                  setState(() {
+                    fecha = null;
+                  });
+                },
+              ) : null,
             ),
             
             SizedBox(height: 24),
@@ -557,12 +1008,13 @@ class _FiltrosDialogState extends State<_FiltrosDialog> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                TextButton.icon(
-                  icon: Icon(Icons.clear),
-                  label: Text('Limpiar'),
-                  style: TextButton.styleFrom(
-                    foregroundColor: EcoPalette.error.color,
+                // Botón para limpiar filtros
+                OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: EcoPalette.greenPrimary.color),
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   ),
+                  child: Text('Limpiar filtros'),
                   onPressed: () {
                     setState(() {
                       _selectedTipo = null;
@@ -570,24 +1022,22 @@ class _FiltrosDialogState extends State<_FiltrosDialog> {
                       tipo = null;
                       estado = null;
                       fecha = null;
+                      calificacionMinima = null;
+                      soloReportesPrioritarios = null;
                     });
-                    widget.onFiltro(null, null, null);
-                    Navigator.pop(context);
                   },
                 ),
-                ElevatedButton.icon(
-                  icon: Icon(Icons.check),
-                  label: Text('Aplicar'),
+                
+                // Botón para aplicar filtros
+                ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: EcoPalette.greenPrimary.color,
                     foregroundColor: EcoPalette.white.color,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   ),
+                  child: Text('Aplicar filtros'),
                   onPressed: () {
-                    widget.onFiltro(tipo, estado, fecha);
+                    widget.onFiltro(tipo, estado, fecha, calificacionMinima, soloReportesPrioritarios);
                     Navigator.pop(context);
                   },
                 ),

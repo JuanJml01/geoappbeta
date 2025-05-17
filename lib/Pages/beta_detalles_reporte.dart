@@ -356,22 +356,64 @@ class _DetallesReportePageState extends State<DetallesReportePage> with SingleTi
               ),
               actions: [
                 // Botón de seguimiento
-                IconButton(
-                  icon: Icon(
-                    _enSeguimiento ? Icons.bookmark : Icons.bookmark_border,
-                    color: Colors.white,
+                Container(
+                  margin: const EdgeInsets.only(right: 8),
+                  decoration: BoxDecoration(
+                    color: _enSeguimiento ? Colors.blue.withOpacity(0.3) : Colors.black26,
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  onPressed: _cambiandoSeguimiento ? null : _toggleSeguimiento,
-                  tooltip: _enSeguimiento ? 'Quitar de seguimiento' : 'Seguir reporte',
+                  child: IconButton(
+                    icon: Icon(
+                      _enSeguimiento ? Icons.bookmark : Icons.bookmark_border,
+                      color: Colors.white,
+                      size: 28,
+                    ),
+                    onPressed: _cambiandoSeguimiento ? null : _toggleSeguimiento,
+                    tooltip: _enSeguimiento ? 'Quitar de seguimiento' : 'Seguir este reporte',
+                  ),
+                ),
+                // Botón de compartir
+                Container(
+                  margin: const EdgeInsets.only(right: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.black26,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: IconButton(
+                    icon: const Icon(
+                      Icons.share,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                    onPressed: () {
+                      // Implementar compartir
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Compartir reporte (próximamente)')),
+                      );
+                    },
+                    tooltip: 'Compartir reporte',
+                  ),
                 ),
               ],
               bottom: TabBar(
                 controller: _tabController,
                 indicatorColor: Theme.of(context).primaryColor,
+                labelColor: Colors.white,
+                unselectedLabelColor: Colors.white70,
+                labelStyle: const TextStyle(fontWeight: FontWeight.bold),
                 tabs: const [
-                  Tab(icon: Icon(Icons.description), text: 'Detalles'),
-                  Tab(icon: Icon(Icons.map), text: 'Ubicación'),
-                  Tab(icon: Icon(Icons.star), text: 'Valorar'),
+                  Tab(
+                    icon: Icon(Icons.description),
+                    text: 'Detalles',
+                  ),
+                  Tab(
+                    icon: Icon(Icons.map),
+                    text: 'Ubicación',
+                  ),
+                  Tab(
+                    icon: Icon(Icons.star),
+                    text: 'Valorar',
+                  ),
                 ],
               ),
             ),
@@ -391,6 +433,32 @@ class _DetallesReportePageState extends State<DetallesReportePage> with SingleTi
           ],
         ),
       ),
+      floatingActionButton: _tabController.index != 2 ? Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Botón de seguimiento
+          if (!_enSeguimiento)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: FloatingActionButton.small(
+                onPressed: _cambiandoSeguimiento ? null : _toggleSeguimiento,
+                backgroundColor: Colors.blue,
+                child: const Icon(Icons.bookmark_add),
+                tooltip: 'Seguir este reporte',
+              ),
+            ),
+          
+          // Botón de valoración
+          FloatingActionButton.extended(
+            onPressed: () {
+              _tabController.animateTo(2);
+            },
+            icon: const Icon(Icons.star),
+            label: const Text('Valorar'),
+            backgroundColor: Theme.of(context).primaryColor,
+          ),
+        ],
+      ) : null,
     );
   }
   
@@ -494,30 +562,48 @@ class _DetallesReportePageState extends State<DetallesReportePage> with SingleTi
             Icons.people, 
             'Prioridad comunitaria', 
             widget.reporte.prioridadComunidad ? 'Alta' : 'Normal',
-            trailing: Row(
-              children: [
-                // Botón para votar "Sí es prioritario"
-                IconButton(
-                  icon: Icon(
-                    Icons.thumb_up,
-                    color: _votoActual == true ? Colors.green : Colors.grey,
-                    size: 20,
+            trailing: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.grey[300]!),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Botón para votar "Sí es prioritario"
+                  IconButton(
+                    icon: Icon(
+                      Icons.thumb_up,
+                      color: _votoActual == true ? Colors.green : Colors.grey,
+                      size: 20,
+                    ),
+                    onPressed: _votandoPrioridad ? null : () => _votarPrioridad(true),
+                    tooltip: 'Es prioritario',
                   ),
-                  onPressed: _votandoPrioridad ? null : () => _votarPrioridad(true),
-                  tooltip: 'Es prioritario',
-                ),
-                
-                // Botón para votar "No es prioritario"
-                IconButton(
-                  icon: Icon(
-                    Icons.thumb_down,
-                    color: _votoActual == false ? Colors.red : Colors.grey,
-                    size: 20,
+                  
+                  // Contador de votos (valor fijo por ahora)
+                  Text(
+                    widget.reporte.prioridadComunidad ? '1' : '0',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: widget.reporte.prioridadComunidad ? Colors.green : Colors.grey,
+                    ),
                   ),
-                  onPressed: _votandoPrioridad ? null : () => _votarPrioridad(false),
-                  tooltip: 'No es prioritario',
-                ),
-              ],
+                  
+                  // Botón para votar "No es prioritario"
+                  IconButton(
+                    icon: Icon(
+                      Icons.thumb_down,
+                      color: _votoActual == false ? Colors.red : Colors.grey,
+                      size: 20,
+                    ),
+                    onPressed: _votandoPrioridad ? null : () => _votarPrioridad(false),
+                    tooltip: 'No es prioritario',
+                  ),
+                ],
+              ),
             ),
           ),
           
@@ -594,77 +680,138 @@ class _DetallesReportePageState extends State<DetallesReportePage> with SingleTi
   
   // Construir el resumen rápido
   Widget _buildResumenRapido() {
-    return Row(
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Icono principal
-        CircleAvatar(
-          radius: 30,
-          backgroundColor: Colors.blue.withOpacity(0.2),
-          child: Icon(
-            widget.reporte.tipoTags.isNotEmpty 
-                ? widget.reporte.tipoTags.first.icono 
-                : Icons.help_outline,
-            color: Colors.blue,
-            size: 30,
+        // Banner de prioridad si es prioritario
+        if (widget.reporte.prioridadComunidad)
+          Container(
+            width: double.infinity,
+            margin: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+            decoration: BoxDecoration(
+              color: Colors.orange.withOpacity(0.2),
+              border: Border.all(color: Colors.orange),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.priority_high, color: Colors.orange),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text(
+                    'Este reporte ha sido marcado como prioritario por la comunidad',
+                    style: TextStyle(
+                      color: Colors.orange,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-        const SizedBox(width: 16),
         
         // Información principal
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Tipo principal
-              Row(
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Icono principal
+            CircleAvatar(
+              radius: 30,
+              backgroundColor: Colors.blue.withOpacity(0.2),
+              child: Icon(
+                widget.reporte.tipoTags.isNotEmpty 
+                    ? widget.reporte.tipoTags.first.icono 
+                    : Icons.help_outline,
+                color: Colors.blue,
+                size: 30,
+              ),
+            ),
+            const SizedBox(width: 16),
+            
+            // Información principal
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(
-                    widget.reporte.tipoTags.isNotEmpty 
-                        ? widget.reporte.tipoTags.first.icono 
-                        : Icons.help_outline,
-                    color: Colors.blue,
+                  // Tipo principal
+                  Row(
+                    children: [
+                      Icon(
+                        widget.reporte.tipoTags.isNotEmpty 
+                            ? widget.reporte.tipoTags.first.icono 
+                            : Icons.help_outline,
+                        color: Colors.blue,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          widget.reporte.tipoTags.isNotEmpty 
+                              ? widget.reporte.tipoTags.first.nombre 
+                              : 'Tipo desconocido',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      widget.reporte.tipoTags.isNotEmpty 
-                          ? widget.reporte.tipoTags.first.nombre 
-                          : 'Tipo desconocido',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
+                  const SizedBox(height: 8),
+                  
+                  // Ubicación principal
+                  Row(
+                    children: [
+                      Icon(
+                        widget.reporte.ubicacionTags.isNotEmpty 
+                            ? widget.reporte.ubicacionTags.first.icono 
+                            : Icons.place,
+                        color: Colors.green,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          widget.reporte.ubicacionTags.isNotEmpty 
+                              ? widget.reporte.ubicacionTags.first.nombre 
+                              : 'Ubicación no especificada',
+                          style: const TextStyle(
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  
+                  // Estado de seguimiento
+                  const SizedBox(height: 8),
+                  if (_enSeguimiento)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.blue.withOpacity(0.5)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: const [
+                          Icon(Icons.bookmark, color: Colors.blue, size: 14),
+                          SizedBox(width: 4),
+                          Text(
+                            'En seguimiento',
+                            style: TextStyle(
+                              color: Colors.blue,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
                 ],
               ),
-              const SizedBox(height: 8),
-              
-              // Ubicación principal
-              Row(
-                children: [
-                  Icon(
-                    widget.reporte.ubicacionTags.isNotEmpty 
-                        ? widget.reporte.ubicacionTags.first.icono 
-                        : Icons.place,
-                    color: Colors.green,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      widget.reporte.ubicacionTags.isNotEmpty 
-                          ? widget.reporte.ubicacionTags.first.nombre 
-                          : 'Ubicación no especificada',
-                      style: const TextStyle(
-                        fontSize: 16,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ],
     );

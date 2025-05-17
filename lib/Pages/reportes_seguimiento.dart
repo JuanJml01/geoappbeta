@@ -156,7 +156,7 @@ class _ReportesSeguimientoPageState extends State<ReportesSeguimientoPage> {
                       const SizedBox(height: 24),
                       ElevatedButton.icon(
                         onPressed: () {
-                          Navigator.pushNamed(context, '/todos_reportes');
+                          Navigator.pushNamed(context, '/todosReportes');
                         },
                         icon: const Icon(Icons.search),
                         label: const Text('Ver todos los reportes'),
