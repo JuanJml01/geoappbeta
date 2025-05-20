@@ -20,7 +20,7 @@ enum TipoUser { anonimo, email }
 class _SubirReporteState extends State<SubirReporte> {
   bool isInitialized = false;
   TipoUser _tipoUser = TipoUser.email;
-  
+
   @override
   void initState() {
     super.initState();
@@ -32,12 +32,14 @@ class _SubirReporteState extends State<SubirReporte> {
       try {
         final sessionProvider = context.read<SessionProvider>();
         final user = sessionProvider.user;
-        
+
         if (user != null && user.email != null && user.email!.isNotEmpty) {
           // Usuario con email
           String email = user.email!;
-          await context.read<Reporteprovider>().fetchReporteForEmail(nombre: email);
-          
+          await context
+              .read<Reporteprovider>()
+              .fetchReporteForEmail(nombre: email);
+
           if (mounted) {
             setState(() {
               isInitialized = true;
@@ -47,7 +49,7 @@ class _SubirReporteState extends State<SubirReporte> {
         } else {
           // Usuario anónimo o sin email
           context.read<Reporteprovider>().reportes.clear();
-          
+
           if (mounted) {
             setState(() {
               isInitialized = true;
@@ -58,14 +60,14 @@ class _SubirReporteState extends State<SubirReporte> {
       } catch (e) {
         // En caso de error, establecer como usuario anónimo
         context.read<Reporteprovider>().reportes.clear();
-        
+
         if (mounted) {
           setState(() {
             isInitialized = true;
             _tipoUser = TipoUser.anonimo;
           });
         }
-        
+
         debugPrint('Error al inicializar datos: $e');
       }
     }
@@ -86,7 +88,8 @@ class _SubirReporteState extends State<SubirReporte> {
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
-      body: Consumer<Reporteprovider>(builder: (context, reporteprovider, child) {
+      body:
+          Consumer<Reporteprovider>(builder: (context, reporteprovider, child) {
         if (!isInitialized) {
           return Container(
             color: EcoPalette.sand.color,
@@ -134,7 +137,8 @@ class _SubirReporteState extends State<SubirReporte> {
                   ),
                   SizedBox(height: 8),
                   Padding(
-                    padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.1),
+                    padding:
+                        EdgeInsets.symmetric(horizontal: screenWidth * 0.1),
                     child: Text(
                       "Inicia sesión con tu cuenta para ver tus reportes anteriores",
                       textAlign: TextAlign.center,
@@ -149,7 +153,7 @@ class _SubirReporteState extends State<SubirReporte> {
             ),
           );
         }
-        
+
         if (reporteprovider.reportes.isEmpty) {
           return Container(
             color: EcoPalette.sand.color,
@@ -173,7 +177,8 @@ class _SubirReporteState extends State<SubirReporte> {
                   ),
                   SizedBox(height: 8),
                   Padding(
-                    padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.1),
+                    padding:
+                        EdgeInsets.symmetric(horizontal: screenWidth * 0.1),
                     child: Text(
                       "Tus reportes aparecerán aquí. Haz clic en el botón para crear uno nuevo.",
                       textAlign: TextAlign.center,
@@ -188,7 +193,7 @@ class _SubirReporteState extends State<SubirReporte> {
             ),
           );
         }
-        
+
         return Container(
           color: EcoPalette.sand.color,
           padding: EdgeInsets.all(16),
@@ -226,9 +231,7 @@ class _SubirReporteState extends State<SubirReporte> {
         );
       }),
       floatingActionButton: BotonSubirReporte(
-        screenWidth: screenWidth, 
-        screenHeight: screenHeight
-      ),
+          screenWidth: screenWidth, screenHeight: screenHeight),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
@@ -236,19 +239,19 @@ class _SubirReporteState extends State<SubirReporte> {
 
 class ReporteCard extends StatelessWidget {
   final Reporte reporte;
-  
+
   const ReporteCard({
     Key? key,
     required this.reporte,
   }) : super(key: key);
-  
+
   @override
   Widget build(BuildContext context) {
     // Obtener el primer tag de tipo (para compatibilidad)
-    final tipoTag = reporte.tipoTags.isNotEmpty 
-        ? reporte.tipoTags.first 
+    final tipoTag = reporte.tipoTags.isNotEmpty
+        ? reporte.tipoTags.first
         : getTipoReporteTagById('otro');
-        
+
     return GestureDetector(
       onTap: () {
         Navigator.pushNamed(context, '/verReporte', arguments: reporte);
@@ -271,7 +274,7 @@ class ReporteCard extends StatelessWidget {
                 ),
               ),
             ),
-            
+
             // Información
             Padding(
               padding: const EdgeInsets.all(12.0),
@@ -281,7 +284,8 @@ class ReporteCard extends StatelessWidget {
                   Row(
                     children: [
                       Container(
-                        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(
                           color: EcoPalette.greenLight.color,
                           borderRadius: BorderRadius.circular(12),
@@ -344,7 +348,7 @@ class BotonSubirReporte extends StatelessWidget {
   });
 
   final TextEditingController _controllerText = TextEditingController();
-  
+
   // Lista para almacenar los tags seleccionados
   final List<String> _selectedTipoTags = ['otro']; // Por defecto 'otro'
   final List<String> _selectedUbicacionTags = ['otro']; // Por defecto 'otro'
@@ -367,17 +371,17 @@ class BotonSubirReporte extends StatelessWidget {
       onPressed: () async {
         final provider = Provider.of<TomarFoto>(context, listen: false);
         await provider.camara();
-        
+
         if (provider.foto != null) {
           // Resetear selecciones previas
           _selectedTipoTags.clear();
           _selectedTipoTags.add('otro');
           _selectedUbicacionTags.clear();
           _selectedUbicacionTags.add('otro');
-          
+
           // Mostrar el diálogo de detalles y esperar la respuesta
           final bool continuarProceso = await _pedirDetallesReporte(context);
-          
+
           if (continuarProceso && _controllerText.text.isNotEmpty) {
             // Mostrar indicador de carga
             ScaffoldMessenger.of(context).showSnackBar(
@@ -396,22 +400,37 @@ class BotonSubirReporte extends StatelessWidget {
                 duration: Duration(seconds: 2),
               ),
             );
-            
+
             try {
               // Escanear la foto
               await provider.scanearFoto(foto: provider.foto!);
-              
+
               // Navegar a la pantalla de carga y prevenir retorno
-              Navigator.pushNamedAndRemoveUntil(
-                context,
-                '/subiendo',
-                (route) => false, // Esto impide volver atrás
-                arguments: {
-                  'descripcion': _controllerText.text,
-                  'tipoTags': _selectedTipoTags,
-                  'ubicacionTags': _selectedUbicacionTags,
-                },
-              );
+              if (provider.aceptada == FotoAceptada.si) {
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  '/subiendo',
+                  (route) => false, // Esto impide volver atrás
+                  arguments: {
+                    'descripcion': _controllerText.text,
+                    'tipoTags': _selectedTipoTags,
+                    'ubicacionTags': _selectedUbicacionTags,
+                  },
+                );
+              } else {
+                debugPrint("No se acepto la foto");
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Row(
+                      children: [
+                        Text('No se acepto la foto'),
+                      ],
+                    ),
+                    backgroundColor: EcoPalette.error.color,
+                    duration: Duration(seconds: 5),
+                  ),
+                );
+              }
             } catch (e) {
               // Mostrar error si falla el procesamiento
               ScaffoldMessenger.of(context).showSnackBar(
@@ -441,7 +460,7 @@ class BotonSubirReporte extends StatelessWidget {
 
   Future<bool> _pedirDetallesReporte(BuildContext context) async {
     bool continuarProceso = false;
-    
+
     await showDialog(
       context: context,
       barrierDismissible: false, // Evitar cerrar el diálogo tocando fuera
@@ -467,7 +486,8 @@ class BotonSubirReporte extends StatelessWidget {
                         children: [
                           Row(
                             children: [
-                              Icon(Icons.description, color: EcoPalette.greenPrimary.color),
+                              Icon(Icons.description,
+                                  color: EcoPalette.greenPrimary.color),
                               SizedBox(width: 8),
                               Text(
                                 'Detalles del reporte',
@@ -480,7 +500,7 @@ class BotonSubirReporte extends StatelessWidget {
                             ],
                           ),
                           SizedBox(height: 20),
-                          
+
                           // Selección de Tipo de Problema (tags múltiples)
                           Text(
                             'Tipo de problema',
@@ -492,16 +512,19 @@ class BotonSubirReporte extends StatelessWidget {
                           ),
                           SizedBox(height: 8),
                           Container(
-                            padding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                            padding: EdgeInsets.symmetric(
+                                vertical: 8, horizontal: 12),
                             decoration: BoxDecoration(
-                              border: Border.all(color: EcoPalette.greenLight.color),
+                              border: Border.all(
+                                  color: EcoPalette.greenLight.color),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Wrap(
                               spacing: 8,
                               runSpacing: 8,
                               children: tiposReporteTags.map((tag) {
-                                final isSelected = _selectedTipoTags.contains(tag.id);
+                                final isSelected =
+                                    _selectedTipoTags.contains(tag.id);
                                 return FilterChip(
                                   label: Row(
                                     mainAxisSize: MainAxisSize.min,
@@ -509,8 +532,8 @@ class BotonSubirReporte extends StatelessWidget {
                                       Icon(
                                         tag.icono,
                                         size: 16,
-                                        color: isSelected 
-                                            ? EcoPalette.white.color 
+                                        color: isSelected
+                                            ? EcoPalette.white.color
                                             : EcoPalette.greenDark.color,
                                       ),
                                       SizedBox(width: 4),
@@ -535,7 +558,7 @@ class BotonSubirReporte extends StatelessWidget {
                                         if (_selectedTipoTags.length > 1) {
                                           _selectedTipoTags.remove(tag.id);
                                         }
-                                        
+
                                         // Si no hay selecciones, añadir 'Otro'
                                         if (_selectedTipoTags.isEmpty) {
                                           _selectedTipoTags.add('otro');
@@ -547,17 +570,17 @@ class BotonSubirReporte extends StatelessWidget {
                                   selectedColor: EcoPalette.greenPrimary.color,
                                   checkmarkColor: EcoPalette.white.color,
                                   labelStyle: TextStyle(
-                                    color: isSelected 
-                                        ? EcoPalette.white.color 
+                                    color: isSelected
+                                        ? EcoPalette.white.color
                                         : EcoPalette.greenDark.color,
                                   ),
                                 );
                               }).toList(),
                             ),
                           ),
-                          
+
                           SizedBox(height: 16),
-                          
+
                           // Selección de Ubicación (tags múltiples)
                           Text(
                             'Tipo de ubicación',
@@ -569,16 +592,19 @@ class BotonSubirReporte extends StatelessWidget {
                           ),
                           SizedBox(height: 8),
                           Container(
-                            padding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                            padding: EdgeInsets.symmetric(
+                                vertical: 8, horizontal: 12),
                             decoration: BoxDecoration(
-                              border: Border.all(color: EcoPalette.greenLight.color),
+                              border: Border.all(
+                                  color: EcoPalette.greenLight.color),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Wrap(
                               spacing: 8,
                               runSpacing: 8,
                               children: ubicacionTags.map((tag) {
-                                final isSelected = _selectedUbicacionTags.contains(tag.id);
+                                final isSelected =
+                                    _selectedUbicacionTags.contains(tag.id);
                                 return FilterChip(
                                   label: Row(
                                     mainAxisSize: MainAxisSize.min,
@@ -586,8 +612,8 @@ class BotonSubirReporte extends StatelessWidget {
                                       Icon(
                                         tag.icono,
                                         size: 16,
-                                        color: isSelected 
-                                            ? EcoPalette.white.color 
+                                        color: isSelected
+                                            ? EcoPalette.white.color
                                             : EcoPalette.greenDark.color,
                                       ),
                                       SizedBox(width: 4),
@@ -612,7 +638,7 @@ class BotonSubirReporte extends StatelessWidget {
                                         if (_selectedUbicacionTags.length > 1) {
                                           _selectedUbicacionTags.remove(tag.id);
                                         }
-                                        
+
                                         // Si no hay selecciones, añadir 'Otro'
                                         if (_selectedUbicacionTags.isEmpty) {
                                           _selectedUbicacionTags.add('otro');
@@ -624,17 +650,17 @@ class BotonSubirReporte extends StatelessWidget {
                                   selectedColor: EcoPalette.greenPrimary.color,
                                   checkmarkColor: EcoPalette.white.color,
                                   labelStyle: TextStyle(
-                                    color: isSelected 
-                                        ? EcoPalette.white.color 
+                                    color: isSelected
+                                        ? EcoPalette.white.color
                                         : EcoPalette.greenDark.color,
                                   ),
                                 );
                               }).toList(),
                             ),
                           ),
-                          
+
                           SizedBox(height: 16),
-                          
+
                           // Descripción
                           Text(
                             'Descripción del reporte',
@@ -656,11 +682,14 @@ class BotonSubirReporte extends StatelessWidget {
                               ),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(10),
-                                borderSide: BorderSide(color: EcoPalette.greenLight.color),
+                                borderSide: BorderSide(
+                                    color: EcoPalette.greenLight.color),
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(10),
-                                borderSide: BorderSide(color: EcoPalette.greenPrimary.color, width: 2),
+                                borderSide: BorderSide(
+                                    color: EcoPalette.greenPrimary.color,
+                                    width: 2),
                               ),
                             ),
                             style: TextStyle(
@@ -668,15 +697,17 @@ class BotonSubirReporte extends StatelessWidget {
                               color: EcoPalette.black.color,
                             ),
                           ),
-                          
+
                           SizedBox(height: 24),
-                          
+
                           // Resumen de selecciones
-                          if (_selectedTipoTags.isNotEmpty || _selectedUbicacionTags.isNotEmpty)
+                          if (_selectedTipoTags.isNotEmpty ||
+                              _selectedUbicacionTags.isNotEmpty)
                             Container(
                               padding: EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: EcoPalette.greenLight.color.withOpacity(0.2),
+                                color: EcoPalette.greenLight.color
+                                    .withOpacity(0.2),
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Column(
@@ -699,8 +730,12 @@ class BotonSubirReporte extends StatelessWidget {
                                         return Chip(
                                           label: Text(tag.nombre),
                                           avatar: Icon(tag.icono, size: 16),
-                                          backgroundColor: EcoPalette.greenPrimary.color.withOpacity(0.1),
-                                          labelStyle: TextStyle(color: EcoPalette.greenDark.color, fontSize: 12),
+                                          backgroundColor: EcoPalette
+                                              .greenPrimary.color
+                                              .withOpacity(0.1),
+                                          labelStyle: TextStyle(
+                                              color: EcoPalette.greenDark.color,
+                                              fontSize: 12),
                                         );
                                       }).toList(),
                                     ),
@@ -708,22 +743,27 @@ class BotonSubirReporte extends StatelessWidget {
                                     Wrap(
                                       spacing: 4,
                                       runSpacing: 4,
-                                      children: _selectedUbicacionTags.map((id) {
+                                      children:
+                                          _selectedUbicacionTags.map((id) {
                                         final tag = getUbicacionTagById(id);
                                         return Chip(
                                           label: Text(tag.nombre),
                                           avatar: Icon(tag.icono, size: 16),
-                                          backgroundColor: EcoPalette.accent.color.withOpacity(0.1),
-                                          labelStyle: TextStyle(color: EcoPalette.greenDark.color, fontSize: 12),
+                                          backgroundColor: EcoPalette
+                                              .accent.color
+                                              .withOpacity(0.1),
+                                          labelStyle: TextStyle(
+                                              color: EcoPalette.greenDark.color,
+                                              fontSize: 12),
                                         );
                                       }).toList(),
                                     ),
                                 ],
                               ),
                             ),
-                          
+
                           SizedBox(height: 24),
-                          
+
                           // Botones
                           Row(
                             mainAxisAlignment: MainAxisAlignment.end,
@@ -747,14 +787,16 @@ class BotonSubirReporte extends StatelessWidget {
                                   } else {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
-                                        content: Text('Por favor, ingresa una descripción'),
+                                        content: Text(
+                                            'Por favor, ingresa una descripción'),
                                         backgroundColor: EcoPalette.error.color,
                                       ),
                                     );
                                   }
                                 },
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: EcoPalette.greenPrimary.color,
+                                  backgroundColor:
+                                      EcoPalette.greenPrimary.color,
                                   foregroundColor: EcoPalette.white.color,
                                 ),
                                 child: Text('Continuar'),
@@ -772,7 +814,7 @@ class BotonSubirReporte extends StatelessWidget {
         );
       },
     );
-    
+
     return continuarProceso;
   }
 }

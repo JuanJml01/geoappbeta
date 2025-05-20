@@ -6,7 +6,7 @@ import 'package:geoappbeta/Provider/usuarioProvider.dart';
 import 'package:geoappbeta/Service/config_service.dart';
 import 'package:geoappbeta/Service/error_service.dart';
 import 'package:geoappbeta/Service/logger_service.dart';
-import 'package:geoappbeta/Widgets/loading_dialog.dart';
+import 'package:geoappbeta/widgets/loading_dialog.dart';
 import 'package:provider/provider.dart';
 import 'package:geoappbeta/mocha.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
