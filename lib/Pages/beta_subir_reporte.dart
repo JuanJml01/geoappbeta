@@ -106,6 +106,7 @@ class _SubirReporteState extends State<SubirReporte> {
                     style: TextStyle(
                       color: EcoPalette.greenDark.color,
                       fontWeight: FontWeight.w500,
+                      fontSize: 16,
                     ),
                   ),
                 ],
@@ -384,27 +385,25 @@ class BotonSubirReporte extends StatelessWidget {
 
           if (continuarProceso && _controllerText.text.isNotEmpty) {
             // Mostrar indicador de carga
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Row(
-                  children: [
-                    Text('Procesando imagen...'),
-                    SizedBox(width: 16),
-                    CircularProgressIndicator(
-                      color: EcoPalette.white.color,
-                      strokeWidth: 2,
-                    ),
-                  ],
-                ),
-                backgroundColor: EcoPalette.greenDark.color,
-                duration: Duration(seconds: 2),
+            final snackBar = SnackBar(
+              duration: Duration(hours: 1),
+              content: Row(
+                children: [
+                  Text('Procesando imagen...'),
+                  SizedBox(width: 16),
+                  CircularProgressIndicator(
+                    color: EcoPalette.white.color,
+                    strokeWidth: 2,
+                  ),
+                ],
               ),
+              backgroundColor: EcoPalette.greenDark.color,
             );
+            ScaffoldMessenger.of(context).showSnackBar(snackBar);
 
-            try {
-              // Escanear la foto
-              await provider.scanearFoto(foto: provider.foto!);
-
+            // Escanear la foto
+            provider.scanearFoto(foto: provider.foto!).then((_) {
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
               // Navegar a la pantalla de carga y prevenir retorno
               if (provider.aceptada == FotoAceptada.si) {
                 Navigator.pushNamedAndRemoveUntil(
@@ -427,27 +426,26 @@ class BotonSubirReporte extends StatelessWidget {
                       ],
                     ),
                     backgroundColor: EcoPalette.error.color,
-                    duration: Duration(seconds: 5),
                   ),
                 );
               }
-            } catch (e) {
+            }).catchError((e) {
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
               // Mostrar error si falla el procesamiento
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text('Error al procesar la imagen: ${e.toString()}'),
                   backgroundColor: EcoPalette.error.color,
-                  duration: Duration(seconds: 3),
                 ),
               );
-            }
+            });
           }
         }
       },
       icon: Icon(
         Icons.add_a_photo,
         size: 24,
-      ),
+        ),
       label: Text(
         "Crear nuevo reporte",
         style: TextStyle(
@@ -501,7 +499,7 @@ class BotonSubirReporte extends StatelessWidget {
                           ),
                           SizedBox(height: 20),
 
-                          // Selección de Tipo de Problema (tags múltiples)
+                          // Selección de Tipo de Problema (tags multiples)
                           Text(
                             'Tipo de problema',
                             style: TextStyle(
@@ -581,7 +579,7 @@ class BotonSubirReporte extends StatelessWidget {
 
                           SizedBox(height: 16),
 
-                          // Selección de Ubicación (tags múltiples)
+                          // Selección de Ubicación (tags multiples)
                           Text(
                             'Tipo de ubicación',
                             style: TextStyle(
