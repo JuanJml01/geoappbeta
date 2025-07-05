@@ -1,0 +1,115 @@
+erDiagram
+  Reportes {
+    bigint id PK
+    text email
+    uuid user_id FK
+    double latitud
+    double longitud
+    text imagen
+    text descripcion
+    text tipo
+    text estado
+    text tipo_tags
+    text ubicacion_tags
+    integer importancia
+    integer vistas
+    boolean prioridad_comunidad
+    timestamp created_at
+    timestamp updated_at
+  }
+
+  logros {
+    integer id PK
+    text nombre
+    text descripcion
+    text icono
+    integer puntos
+    text condicion
+    text categoria
+    integer nivel_requerido
+    timestamp created_at
+  }
+
+  police {
+    bigint id PK
+    timestamp created_at
+  }
+
+  reporte_calificaciones {
+    bigint id PK
+    bigint reporte_id FK
+    uuid user_id FK
+    text email
+    text device_id
+    integer calificacion
+    text comentario
+    timestamp created_at
+  }
+
+  temp_sessions {
+    uuid id PK
+    text device_id
+    timestamp created_at
+    timestamp last_active
+    timestamp expires_at
+  }
+
+  user_logs {
+    uuid id PK
+    text action
+    text details
+    uuid user_id FK
+    timestamp timestamp
+    jsonb additional_data
+    timestamp created_at
+  }
+
+  usuario_logros {
+    integer id PK
+    uuid usuario_id FK
+    integer logro_id FK
+    timestamp fecha_obtenido
+  }
+
+  usuario_zonas {
+    integer id PK
+    uuid usuario_id FK
+    integer zona_id FK
+    boolean es_favorita
+    boolean es_vigilante
+    timestamp created_at
+  }
+
+  usuarios {
+    uuid id PK
+    text nombre
+    text ciudad
+    text bio
+    text foto
+    integer nivel
+    integer puntos
+    boolean es_anonimo
+    timestamp created_at
+    timestamp updated_at
+  }
+
+  zonas {
+    integer id PK
+    text nombre
+    text descripcion
+    double latitud
+    double longitud
+    double radio_km
+    timestamp created_at
+  }
+
+  %% Relaciones
+  Reportes ||--o{ reporte_calificaciones : tiene
+  usuarios ||--o{ usuario_logros : tiene
+  usuarios ||--o{ usuario_zonas : tiene
+  usuarios ||--o{ user_logs : genera
+  usuarios ||--o{ Reportes : reporta
+  usuarios ||--o{ reporte_calificaciones : califica
+  usuario_logros }o--|| logros : obtiene
+  usuario_zonas }o--|| zonas : pertenece
+  reporte_calificaciones }o--|| Reportes : califica
